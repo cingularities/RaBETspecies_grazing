@@ -39,7 +39,7 @@ options(scipen = 100, digits = 4)
 
 
 ###SRER Percent Cover###
-srer_cover <- read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/srer_landuse_freq_082624.csv') %>% select(-freq_NaN)%>% na.omit() 
+srer_cover <- read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/srer_landuse_freq_082624.csv') %>% dplyr::select(-freq_NaN)%>% na.omit() 
 srer_mesquite <- srer_cover %>% dplyr::select(-c(cactus,creosote,paloverde,lotebush,bareground,grass)) %>% rename(cover = mesquite) %>% mutate(species="mesquite")%>% na.omit()
 srer_cactus <- srer_cover %>% dplyr::select(-c(mesquite,creosote,paloverde,lotebush,bareground,grass))%>% rename(cover= cactus) %>% mutate(species="cactus")%>% na.omit()
 srer_creosote <- srer_cover %>% dplyr::select(-c(cactus,mesquite,paloverde,lotebush,bareground,grass))%>% rename(cover= creosote) %>% mutate(species="creosote")%>% na.omit()
@@ -133,18 +133,27 @@ grass = srer_cover_rbind_bg %>%
             sd=sd(cover),  
             count=n(),  
             se=sd/sqrt(count),  
-            upper_limit=mean+se,  
-            lower_limit=mean-se)
+            upper_limit=mean+sd,  
+            lower_limit=mean-sd)
 
 all = rbind(species,grass) 
 # create a new dataframe crop_means_Se 
 #write.csv(all, 'all_species_cover_082624.csv')
 
 windows()
+theme_set(theme_gray(base_size = 20, base_family = "") + 
+            theme(
+              axis.title = element_text(face = "bold"),      # Bold axis titles
+              axis.text = element_text(face = "bold"),       # Bold axis text
+              legend.text = element_text(face = "bold"),     # Bold legend text
+              legend.title = element_text(face = "bold"),    # Bold legend title
+              strip.text = element_text(face = "bold")       # Bold facet labels
+            ))
 ggplot(srer_cover_rbind, aes(x=factor(species), y=cover, fill=species))+
   scale_fill_manual(values=c("gray", "brown",'lightblue','lightgreen','lightpink'))+
-  geom_boxplot(alpha=0.5)+
-  theme( legend.position = "none" )+
+  geom_boxplot(alpha=0.5,
+               size = 1)+
+  theme( legend.position = "none" , axis.text.x = element_text(angle = 90))+
   ylab("mean % cover")+stat_summary(fun.y="mean",color="red", shape=4)+
   geom_line(aes(y = mean_wood, group = 1), size = 1, color = 'red') 
 
@@ -163,25 +172,42 @@ species_density = srer_density %>%
             sd=sd(n),  
             count=n(),  
             se=sd/sqrt(count),  
-            upper_limit=mean+se,  
-            lower_limit=mean-se)
+            upper_limit=mean+sd,  
+            lower_limit=mean-sd)
 
 mean_density = sum(species_density$mean)
 #write.csv(species_density, 'all_species_density_082624.csv')
 
 
-# create a new dataframe crop_means_Se 
+
+
+
 windows()
-theme_set(theme_gray(base_size = 20))
-ggplot(species_density, aes(x=species, y=mean, fill=species))+
-  scale_fill_manual(values=c("gray", "brown",'lightblue','lightgreen','lightpink')) +  
-  geom_point(shape=21, size= 3)+ 
-  geom_errorbar(aes(ymin=lower_limit, ymax=upper_limit), width=.2, 
-                position=position_dodge(0.01))+
-  ylab("mean density per ha")
+# Set theme with bold base elements
+theme_set(theme_gray(base_size = 20, base_family = "") + 
+            theme(
+              axis.title = element_text(face = "bold"),      # Bold axis titles
+              axis.text = element_text(face = "bold"),       # Bold axis text
+              legend.text = element_text(face = "bold"),     # Bold legend text
+              legend.title = element_text(face = "bold"),    # Bold legend title
+              strip.text = element_text(face = "bold")       # Bold facet labels
+            ))
 
-
-
+# Create the plot with bold elements
+ggplot(species_density, aes(x = species, y = mean, fill = species)) +
+  scale_fill_manual(values = c("gray", "brown", 'lightblue', 'lightgreen', 'lightpink')) +  
+  theme(
+    legend.position = "none", 
+    axis.text.x = element_text(angle = 90, face = "bold"), # Bold x-axis text
+    axis.text.y = element_text(face = "bold"),             # Bold y-axis text
+    axis.title = element_text(face = "bold")               # Bold axis titles
+  ) +
+  geom_point(shape = 21, size = 6) + 
+  geom_errorbar(aes(ymin = lower_limit, ymax = upper_limit), 
+                width = 0.2, 
+                position = position_dodge(0.01),
+                size = 1.2) +                              # Thicker, bold error bars
+  ylab("Mean Density per ha")
 
 
 
@@ -196,8 +222,8 @@ species_crownarea = srer_crownarea %>%
             sd=sd(crownArea),  
             count=n(),  
             se=sd/sqrt(count),  
-            upper_limit=crownArea_mean+se,  
-            lower_limit=crownArea_mean-se)%>%
+            upper_limit=crownArea_mean+sd,  
+            lower_limit=crownArea_mean-sd)%>%
   mutate(w_mean = crownArea_mean)%>%
   mutate(w_stdev = sd_crownarea)%>%
   mutate(g_mean = mean_grass)%>%
@@ -207,14 +233,26 @@ species_crownarea = srer_crownarea %>%
 
 # create a new dataframe crop_means_Se 
 windows()
-theme_set(theme_gray(base_size = 20))
+# Set theme with bold base elements
+theme_set(theme_gray(base_size = 20, base_family = "") + 
+            theme(
+              axis.title = element_text(face = "bold"),      # Bold axis titles
+              axis.text = element_text(face = "bold"),       # Bold axis text
+              legend.text = element_text(face = "bold"),     # Bold legend text
+              legend.title = element_text(face = "bold"),    # Bold legend title
+              strip.text = element_text(face = "bold")       # Bold facet labels
+            ))
 # Create the plot
 ggplot(species_crownarea, aes(x = species, y = crownArea_mean, fill=species))+
   scale_fill_manual(values=c("gray", "brown",'lightblue','lightgreen','lightpink'))+
   geom_bar(position = "stack", stat = "identity", alpha=0.5) +
-  geom_errorbar(aes(ymin=crownArea_mean-sd, ymax=crownArea_mean+sd), width=.2, 
-                position=position_dodge(0.05))+
+  geom_errorbar(aes(ymin = lower_limit, ymax = upper_limit), 
+                width = 0.2, 
+                position = position_dodge(0.01),
+                size = 1.2) +  
   geom_line(aes(y = mean_crownarea, group = 1), size = 1, color = 'red')+
+  theme( legend.position = "none" , axis.text.x = element_text(angle = 90))+
+  
   ylab("mean crown area m^2")
 
 
@@ -714,17 +752,10 @@ species_elev_woody_grazing_soil_cover_mean <- srer_cover_rbind %>%
     cover_sd = sd(cover))
 #summarise(n = n())
 species_elev_woody_grazing_soil_cover_summary = species_elev_woody_grazing_soil_cover_mean%>%
-left_join(species_elev_woody_grazing_soil_cover_p, by = c('species', 'layer', 'MUSYM'))%>%filter(grazing_avg < 0.05)
+left_join(species_elev_woody_grazing_soil_cover_p, by = c('species', 'layer', 'MUSYM'))
 
 write.csv(species_elev_woody_grazing_soil_cover_summary,"species_elev_woody_grazing_soil_cover_summary_082624.csv")
 #write.csv(species_elev_woody_grazing_soil_cover_p,"species_elev_woody_grazing_soil_cover_p_082624.csv")
-
-
-
-
-
-
-
 
 
 
@@ -745,22 +776,20 @@ species_elev_woody_grazing_soil_density_mean <- srer_density %>%
   )
 #summarise(n = n())
 species_elev_woody_grazing_soil_density_summary = species_elev_woody_grazing_soil_density_mean%>% 
-  left_join(species_elev_woody_grazing_soil_density_p, by = c('species', 'layer', 'MUSYM'))%>%filter(grazing_avg < 0.05)
+  left_join(species_elev_woody_grazing_soil_density_p, by = c('species', 'layer', 'MUSYM'))
 
 #write.csv(species_elev_woody_grazing_soil_density_p,"species_elev_woody_grazing_soil_density_p_090123.csv")
 write.csv(species_elev_woody_grazing_soil_density_summary,"species_elev_woody_grazing_soil_density_summary_082624.csv")
+
+
+
 
 #srer_crownarea <- read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/species_elev_woody_grazing_soil_crownarea_mean.csv')
 ##Elevation, species and soils##
 species_elev_woody_grazing_soil_crownarea_p <- srer_crownarea %>%
   group_by(layer, MUSYM, species) %>%
-  summarise(
-    grazing_avg = ifelse(
-      sum(grazing == 1) >= 2 && sum(grazing == 2) >= 2,
-      t.test(crownArea[grazing == 1], crownArea[grazing == 2])$p.value,
-      NA
-    )
-  )
+  summarise(grazing_avg = t.test(crownArea[grazing == 0], crownArea[grazing == 1])$p.value)
+
 
 species_elev_woody_grazing_soil_crownarea_mean <- srer_crownarea%>%
   group_by(MUSYM, species, layer, grazing) %>%
@@ -771,7 +800,7 @@ species_elev_woody_grazing_soil_crownarea_mean <- srer_crownarea%>%
   )
 
 species_elev_woody_grazing_soil_crownarea_summary = species_elev_woody_grazing_soil_crownarea_mean%>% 
-  left_join(species_elev_woody_grazing_soil_crownarea_p, by = c('species', 'layer', 'MUSYM'))%>%filter(grazing_avg < 0.05)
+  left_join(species_elev_woody_grazing_soil_crownarea_p, by = c('species', 'layer', 'MUSYM'))
 
 write.csv(species_elev_woody_grazing_soil_crownarea_summary,"species_elev_woody_grazing_soil_crownarea_summary_082624.csv")
 #write.csv(species_elev_woody_grazing_soil_crownarea_p,"species_elev_woody_grazing_soil_crownarea_summary_082624.csv")
@@ -801,6 +830,7 @@ write.csv(species_elev_woody_grazing_soil_crownarea_summary,"species_elev_woody_
 
 #########SRER SUMMARIZING WITH SOILS PLOTS#########
 cover_layer1 <- species_elev_woody_grazing_soil_cover_summary %>% 
+  mutate(alpha = ifelse(grazing_avg > 0.1, 0.3, 0.8))%>% # Adjust 'significance' column as needed
   filter(layer==1)%>%
   mutate(across(everything(), ~ round(., 2))) %>% 
   filter(MUSYM == "EbC")%>%  
@@ -808,7 +838,8 @@ cover_layer1 <- species_elev_woody_grazing_soil_cover_summary %>%
   mutate(upper_limit=cover_mean+cover_sd)%>%
   mutate(lower_limit = ifelse(cover_mean - cover_sd < 0, 0, cover_mean - cover_sd))
 
-cover_layer2 <- species_elev_woody_grazing_soil_cover_summary %>% 
+cover_layer2 <- species_elev_woody_grazing_soil_cover_summary %>%   
+  mutate(alpha = ifelse(grazing_avg > 0.1, 0.3, 0.8))%>% # Adjust 'significance' column as needed
   filter(layer==2)%>%
   mutate(across(everything(), ~ round(., 2))) %>% 
   filter(MUSYM == "An" |MUSYM =="EbC"|MUSYM =="SoB")%>%  
@@ -817,6 +848,7 @@ cover_layer2 <- species_elev_woody_grazing_soil_cover_summary %>%
   mutate(lower_limit = ifelse(cover_mean - cover_sd < 0, 0, cover_mean - cover_sd))
 
 cover_layer3 <- species_elev_woody_grazing_soil_cover_summary %>% 
+  mutate(alpha = ifelse(grazing_avg > 0.1, 0.3, 0.8))%>% # Adjust 'significance' column as needed
   filter(layer==3)%>%
   mutate(across(everything(), ~ round(., 2))) %>% 
   filter(MUSYM == "An" |MUSYM == "SoB")%>%  
@@ -825,6 +857,7 @@ cover_layer3 <- species_elev_woody_grazing_soil_cover_summary %>%
   mutate(lower_limit = ifelse(cover_mean - cover_sd < 0, 0, cover_mean - cover_sd))
 
 cover_layer4 <- species_elev_woody_grazing_soil_cover_summary %>% 
+  mutate(alpha = ifelse(grazing_avg > 0.1, 0.3, 0.8))%>% # Adjust 'significance' column as needed
   filter(layer==4)%>%
   mutate(across(everything(), ~ round(., 2))) %>% 
   filter(MUSYM == "CtB" |MUSYM == "CuC")%>%  
@@ -857,19 +890,20 @@ density_layer4 <- species_elev_woody_grazing_soil_density_summary %>%
 crownarea_layer1 <- species_elev_woody_grazing_soil_crownarea_summary %>% 
   filter(layer==1)%>%
   mutate(across(everything(), ~ round(., 2))) %>% 
-  filter(MUSYM == "EbC")%>%  mutate(landuse = ifelse(grazing > 1, 'grazing','protected'))
+  filter(MUSYM == "EbC")%>%  mutate(landuse = ifelse(grazing < 1, 'protected','grazing'))
+
 crownarea_layer2 <- species_elev_woody_grazing_soil_crownarea_summary %>% 
   filter(layer==2)%>%
   mutate(across(everything(), ~ round(., 2))) %>% 
-  filter(MUSYM == "An" |MUSYM =="EbC"|MUSYM =="SoB")%>%  mutate(landuse = ifelse(grazing > 1, 'grazing','protected'))
+  filter(MUSYM == "An" |MUSYM =="EbC"|MUSYM =="SoB")%>%  mutate(landuse = ifelse(grazing < 1, 'protected','grazing'))
 crownarea_layer3 <- species_elev_woody_grazing_soil_crownarea_summary %>% 
   filter(layer==3)%>%
   mutate(across(everything(), ~ round(., 2))) %>% 
-  filter(MUSYM == "An" |MUSYM == "SoB")%>%  mutate(landuse = ifelse(grazing > 1, 'grazing','protected'))
+  filter(MUSYM == "An" |MUSYM == "SoB")%>%  mutate(landuse = ifelse(grazing < 1, 'protected','grazing'))
 crownarea_layer4 <- species_elev_woody_grazing_soil_crownarea_summary %>% 
   filter(layer==4)%>%
   mutate(across(everything(), ~ round(., 2))) %>% 
-  filter(MUSYM == "CtB" |MUSYM == "CuC")%>%  mutate(landuse = ifelse(grazing > 1, 'grazing','protected'))
+  filter(MUSYM == "CtB" |MUSYM == "CuC")%>%  mutate(landuse = ifelse(grazing < 1, 'protected','grazing'))
 
 
 
@@ -887,64 +921,108 @@ crownarea_layer4 <- species_elev_woody_grazing_soil_crownarea_summary %>%
 
 ###BARPLOTS COMPARING grazing cover
 cover_layer1_plot<- ggplot(cover_layer1, aes(x = species, y = cover_mean, fill = grazing)) +
-  geom_col(alpha = 0.4, position = "identity")+
+  geom_col(aes(alpha = alpha), position = "identity") + # Map alpha for transparency
   facet_grid(~ MUSYM) +
   labs(fill = "Layer 1")+  # Change the legend title
-  theme(axis.text=element_text(size=12),
-        axis.title=element_text(size=14,face="bold"))+
-  ylim(0,20)+ geom_hline(aes(yintercept = 12.54), color = "blue", linetype = "dashed", size = 1)+ # Add a mean line+ # Add horizontal lines at specific y-intercepts # Add horizontal lines at specific y-intercepts
-  geom_errorbar(aes(ymin = lower_limit, ymax = upper_limit, linetype = as.factor(grazing)),  width = 0.4, position = position_dodge(width = 1),size=1)
+  theme(legend.position = "outside",
+        axis.text.x = element_text(angle = 90, face = "bold", size = 25),  # Correctly set text appearance
+        axis.text.y=element_text(size=25),
+        axis.title=element_text(size=30,face="bold"))+
+  ylim(0,20)+ ylab("mean % cover")+geom_hline(aes(yintercept = 12.54), color = "blue", linetype = "dashed", size = 1)+ # Add a mean line+ # Add horizontal lines at specific y-intercepts # Add horizontal lines at specific y-intercepts
+  geom_errorbar(aes(ymin = lower_limit, ymax = upper_limit, linetype = as.factor(grazing)),  width = 0.4, position = position_dodge(width = 1),size=1)+
+  scale_alpha_continuous(range = c(0.3, 1)) # Set alpha scale range
+
     
   
 windows()
+# Set theme with bold base elements
+theme_set(theme_gray(base_size = 30, base_family = "") + 
+            theme(
+              axis.title = element_text(face = "bold"),      # Bold axis titles
+              axis.text = element_text(face = "bold"),       # Bold axis text
+              legend.text = element_text(face = "bold"),     # Bold legend text
+              legend.title = element_text(face = "bold"),    # Bold legend title
+              strip.text = element_text(face = "bold")       # Bold facet labels
+            ))
 print(cover_layer1_plot)
 
 cover_layer2_plot<- ggplot(cover_layer2, aes(x = species, y = cover_mean, fill = grazing)) +
-  geom_col(alpha = 0.4, position = "identity") +
+  geom_col(aes(alpha = alpha), position = "identity") + # Map alpha for transparency
   facet_wrap(~ MUSYM)+
   labs(fill = "Layer 2")+  # Change the legend title
-  theme(axis.text=element_text(size=5),
-        axis.title=element_text(size=14,face="bold"))+
-  ylim(0,20)+
+  theme(legend.position = "outside",
+        axis.text.x = element_text(angle = 90, face = "bold", size = 25),  # Correctly set text appearance
+        axis.text.y=element_text(size=25),
+        axis.title=element_text(size=30,face="bold"))+
+  ylim(0,20)+  ylab("mean % cover")+
  geom_hline(aes(yintercept = 15.68), color = "red", linetype = "dashed", size = 1) + # Add horizontal lines at specific y-intercepts
  geom_hline(aes(yintercept = 13.80), color = "red", linetype = "dashed", size = 1)+  # Add horizontal lines at specific y-intercepts
  geom_hline(aes(yintercept = 13.52), color = "red", linetype = "dashed", size = 1) +  # Add horizontal lines at specific y-intercepts
  geom_hline(aes(yintercept = 14.22), color ='blue', linetype = "dashed", size = 1) + # Add horizontal lines at specific y-intercepts # Add horizontal lines at specific y-intercepts
- geom_errorbar(aes(ymin = lower_limit, ymax = upper_limit, linetype = as.factor(grazing)),  width = 0.4, position = position_dodge(width = 1),size=1)
+ geom_errorbar(aes(ymin = lower_limit, ymax = upper_limit, linetype = as.factor(grazing)),  width = 0.4, position = position_dodge(width = 1),size=1)+
+scale_alpha_continuous(range = c(0.3, 0.8)) # Set alpha scale range
+
 windows()
+theme_set(theme_gray(base_size = 30, base_family = "") + 
+            theme(
+              axis.title = element_text(face = "bold"),      # Bold axis titles
+              axis.text = element_text(face = "bold"),       # Bold axis text
+              legend.text = element_text(face = "bold"),     # Bold legend text
+              legend.title = element_text(face = "bold"),    # Bold legend title
+              strip.text = element_text(face = "bold")       # Bold facet labels
+            ))
 print(cover_layer2_plot)
 
 cover_layer3_plot<- ggplot(cover_layer3, aes(x = species, y = cover_mean, fill = grazing)) +
-  geom_col(alpha = 0.4, position = "identity") +
+  geom_col(aes(alpha = alpha), position = "identity") + # Map alpha for transparency
   facet_wrap(~ MUSYM)+
   labs(fill = "Layer 3")+  # Change the legend title
-  theme(axis.text=element_text(size=8),
-        axis.title=element_text(size=14,face="bold"))+
-  ylim(0,20)+
+  theme(legend.position = "outside",
+        axis.text.x = element_text(angle = 90, face = "bold", size = 25),  # Correctly set text appearance
+        axis.text.y=element_text(size=25),
+        axis.title=element_text(size=30,face="bold"))+
+  ylim(0,20)+ylab("mean % cover")+
  geom_hline(aes(yintercept = 18.50), color = "red", linetype = "dashed", size = 1) + # Add horizontal lines at specific y-intercepts
-# geom_hline(aes(yintercept = 16.35), color = "red", linetype = "dashed", size = 1)+
+ geom_hline(aes(yintercept = 16.35), color = "red", linetype = "dashed", size = 1)+
  geom_hline(aes(yintercept = 16.81), color = 'blue', linetype = "dashed", size = 1) + # Add horizontal lines at specific y-intercepts # Add horizontal lines at specific y-intercepts
-  geom_errorbar(aes(ymin = lower_limit, ymax = upper_limit, linetype = as.factor(grazing)),  width = 0.4, position = position_dodge(width = 1),size=1)
-
+  geom_errorbar(aes(ymin = lower_limit, ymax = upper_limit, linetype = as.factor(grazing)),  width = 0.4, position = position_dodge(width = 1),size=1)+
+  scale_alpha_continuous(range = c(0.3, 0.8)) # Set alpha scale range
 windows()
+theme_set(theme_gray(base_size = 30, base_family = "") + 
+            theme(
+              axis.title = element_text(face = "bold"),      # Bold axis titles
+              axis.text = element_text(face = "bold"),       # Bold axis text
+              legend.text = element_text(face = "bold"),     # Bold legend text
+              legend.title = element_text(face = "bold"),    # Bold legend title
+              strip.text = element_text(face = "bold")       # Bold facet labels
+            ))
 print(cover_layer3_plot)
 
 
 cover_layer4_plot<- ggplot(cover_layer4, aes(x = species, y = cover_mean, fill = grazing)) +
-  geom_col(alpha = 0.4, position = "identity") +
+  geom_col(aes(alpha = alpha), position = "identity") + # Map alpha for transparency
   facet_wrap(~ MUSYM)+
   labs(fill = "Layer 4")+  # Change the legend title
-  theme(axis.text=element_text(size=8),
-        axis.title=element_text(size=14,face="bold"))+
-  ylim(0,43)+
+  theme(legend.position = "outside",
+        axis.text.x = element_text(angle = 90, face = "bold", size = 25),  # Correctly set text appearance
+        axis.text.y=element_text(size=25),
+        axis.title=element_text(size=30,face="bold"))+
+  ylim(0,43)+ylab("mean % cover")+ # Center and bold the title
  geom_hline(aes(yintercept = 42.09), color = "red", linetype = "dashed", size = 1) + # Add horizontal lines at specific y-intercepts
  geom_hline(aes(yintercept = 34.98), color = "red", linetype = "dashed", size = 1)+
   geom_hline(aes(yintercept = 39.00), color = "blue", linetype = "dashed", size = 1) + # Add horizontal lines at specific y-intercepts # Add horizontal lines at specific y-intercepts
-   geom_errorbar(aes(ymin = lower_limit, ymax = upper_limit, linetype = as.factor(grazing)),  width = 0.4, position = position_dodge(width = 1),size=1)+ scale_y_break(breaks=c(20, 35), scales=c(0.1, 0.1))
-#  scale_y_continuous(sec.axis = sec_axis(~., name = "Secondary Axis Name", breaks = c(20, 30, 40, 50))) +
-
+   geom_errorbar(aes(ymin = lower_limit, ymax = upper_limit, linetype = as.factor(grazing)),  width = 0.4, position = position_dodge(width = 1),size=1)+ scale_y_break(breaks=c(20, 35), scales=c(0.1, 0.1))+
+  scale_alpha_continuous(range = c(0.3, 0.8)) # Set alpha scale range
 
 windows()
+theme_set(theme_gray(base_size = 30, base_family = "") + 
+            theme(
+              axis.title = element_text(face = "bold"),      # Bold axis titles
+              axis.text = element_text(face = "bold"),       # Bold axis text
+              legend.text = element_text(face = "bold"),     # Bold legend text
+              legend.title = element_text(face = "bold"),    # Bold legend title
+              strip.text = element_text(face = "bold")       # Bold facet labels
+            ))
 print(cover_layer4_plot)
 
 
@@ -1071,7 +1149,7 @@ density_layer4_density$grazing <- as.factor(density_layer4_density$grazing)
 
 
 density_layer1_density_plot<-ggplot(data = density_layer1_density, aes(x = n, y = species, fill = grazing)) + facet_wrap(~MUSYM)+
-  ggridges::geom_density_ridges(quantile_lines=TRUE, quantile_fun=function(n,...)mean(n),scale = 1) + xlim(0, 20)+
+  ggridges::geom_density_ridges(quantile_lines=TRUE, quantile_fun=function(n,...)mean(n),scale = 1) + xlim(0, 300)+
   scale_x_continuous(
     limits = c(0, 10),  # Adjust the range as needed
     breaks = seq(0, 10, by = 1),  # Specify the tick positions
@@ -1118,62 +1196,128 @@ species_elev_woody_grazing_soil_density_summary_layer4 = species_elev_woody_graz
   
 species_elev_woody_grazing_soil_density_summary_layer1_plot =
   species_elev_woody_grazing_soil_density_summary_layer1%>%
+  mutate(alpha = ifelse(grazing_avg > 0.1, 0.3, 1))%>%
   ggplot(aes(x = species, y = density_mean)) +
-  geom_line(aes(group = species))+
-  geom_point(aes(color = grazing, size = density_mean), alpha = 0.5) +
+  geom_line(aes(group = species)) +
+  geom_point(aes(color = grazing, size = density_mean, alpha = alpha)) + # Use alpha for transparency
   facet_grid(cols = vars(MUSYM), scales = "free") + 
   scale_size(range = c(1, 15)) + # Adjust the range of points size
-  theme_set(theme_bw() +theme(legend.position = "none"))+
-  theme(axis.text.x = element_text(angle = 90))+
-  ylim(0,13)
+  scale_alpha_continuous(range = c(0.3, 1)) + # Adjust transparency scale
+  theme(
+    legend.position = "outside",
+    axis.text.x = element_text(angle = 90, face = "bold", size = 25),  # Correctly set text appearance
+    axis.text.y = element_text(size = 25),
+    axis.title.x = element_text(size = 25),
+    axis.title.y = element_text(size = 25)
+  ) +
+  ylim(0, 500)
+
 windows()
+theme_set(theme_gray(base_size = 30, base_family = "") + 
+            theme(
+              axis.title = element_text(face = "bold"),      # Bold axis titles
+              axis.text = element_text(face = "bold"),       # Bold axis text
+              legend.text = element_text(face = "bold"),     # Bold legend text
+              legend.title = element_text(face = "bold"),    # Bold legend title
+              strip.text = element_text(face = "bold")       # Bold facet labels
+            ))
 print(species_elev_woody_grazing_soil_density_summary_layer1_plot)
 
 species_elev_woody_grazing_soil_density_summary_layer2_plot =
   species_elev_woody_grazing_soil_density_summary_layer2%>%
+  mutate(alpha = ifelse(grazing_avg > 0.1, 0.3, 1))%>%
   ggplot(aes(x = species, y = density_mean)) +
-  geom_line(aes(group = species))+
-  geom_point(aes(color = grazing, size = density_mean), alpha = 0.5) +
+  geom_line(aes(group = species)) +
+  geom_point(aes(color = grazing, size = density_mean, alpha = alpha)) + # Use alpha for transparency
   facet_grid(cols = vars(MUSYM), scales = "free") + 
   scale_size(range = c(1, 15)) + # Adjust the range of points size
-  theme_set(theme_bw() +theme(legend.position = "none"))+
-  theme(axis.text.x = element_text(angle = 90))+
-  ylim(0,13)
+  scale_alpha_continuous(range = c(0.3, 1)) + # Adjust transparency scale
+  theme(
+    legend.position = "outside",
+    axis.text.x = element_text(angle = 90, face = "bold", size = 25),  # Correctly set text appearance
+    axis.text.y = element_text(size = 25),
+    axis.title.x = element_text(size = 25),
+    axis.title.y = element_text(size = 25)
+  ) +
+  ylim(0, 500)
 windows()
+theme_set(theme_gray(base_size = 30, base_family = "") + 
+            theme(
+              axis.title = element_text(face = "bold"),      # Bold axis titles
+              axis.text = element_text(face = "bold"),       # Bold axis text
+              legend.text = element_text(face = "bold"),     # Bold legend text
+              legend.title = element_text(face = "bold"),    # Bold legend title
+              strip.text = element_text(face = "bold")       # Bold facet labels
+            ))
 print(species_elev_woody_grazing_soil_density_summary_layer2_plot)
 
 species_elev_woody_grazing_soil_density_summary_layer3_plot =
   species_elev_woody_grazing_soil_density_summary_layer3%>%
+  mutate(alpha = ifelse(grazing_avg > 0.1, 0.3, 1))%>%
   ggplot(aes(x = species, y = density_mean)) +
-  geom_line(aes(group = species))+
-  geom_point(aes(color = grazing, size = density_mean), alpha = 0.5) +
+  geom_line(aes(group = species)) +
+  geom_point(aes(color = grazing, size = density_mean, alpha = alpha)) + # Use alpha for transparency
   facet_grid(cols = vars(MUSYM), scales = "free") + 
   scale_size(range = c(1, 15)) + # Adjust the range of points size
-  theme_set(theme_bw() +theme(legend.position = "none"))+
-  theme(axis.text.x = element_text(angle = 90))+
-  ylim(0,13)
+  scale_alpha_continuous(range = c(0.3, 1)) + # Adjust transparency scale
+  theme(
+    legend.position = "outside",
+    axis.text.x = element_text(angle = 90, face = "bold", size = 25),  # Correctly set text appearance
+    axis.text.y = element_text(size = 25),
+    axis.title.x = element_text(size = 25),
+    axis.title.y = element_text(size = 25)
+  ) +
+  ylim(0, 500)
+
 windows()
+theme_set(theme_gray(base_size = 30, base_family = "") + 
+            theme(
+              axis.title = element_text(face = "bold"),      # Bold axis titles
+              axis.text = element_text(face = "bold"),       # Bold axis text
+              legend.text = element_text(face = "bold"),     # Bold legend text
+              legend.title = element_text(face = "bold"),    # Bold legend title
+              strip.text = element_text(face = "bold")       # Bold facet labels
+            ))
 print(species_elev_woody_grazing_soil_density_summary_layer3_plot)
 
 species_elev_woody_grazing_soil_density_summary_layer4_plot =
-  species_elev_woody_grazing_soil_density_summary_layer4 %>%
+  species_elev_woody_grazing_soil_density_summary_layer4%>% 
+  mutate(alpha = ifelse(grazing_avg > 0.1, 0.3, 1))%>%
   ggplot(aes(x = species, y = density_mean)) +
-  geom_line(aes(group = species))+
-  geom_point(aes(color = grazing, size = density_mean), alpha = 0.5) +
+  geom_line(aes(group = species)) +
+  geom_point(aes(color = grazing, size = density_mean, alpha = alpha)) + # Use alpha for transparency
   facet_grid(cols = vars(MUSYM), scales = "free") + 
   scale_size(range = c(1, 15)) + # Adjust the range of points size
-  theme_set(theme_bw() +theme(legend.position = "outside"))+
-  theme(axis.text.x = element_text(angle = 90))
+  scale_alpha_continuous(range = c(0.3, 1)) + # Adjust transparency scale
+  theme(
+    legend.position = "outside",
+    axis.text.x = element_text(angle = 90, face = "bold", size = 25),  # Correctly set text appearance
+    axis.text.y = element_text(size = 25),
+    axis.title.x = element_text(size = 25),
+    axis.title.y = element_text(size = 25)
+  ) +
+  ylim(0, 800)
+
 windows()
+theme_set(theme_gray(base_size = 30, base_family = "") + 
+            theme(
+              axis.title = element_text(face = "bold"),      # Bold axis titles
+              axis.text = element_text(face = "bold"),       # Bold axis text
+              legend.text = element_text(face = "bold"),     # Bold legend text
+              legend.title = element_text(face = "bold"),    # Bold legend title
+              strip.text = element_text(face = "bold")       # Bold facet labels
+            ))
 print(species_elev_woody_grazing_soil_density_summary_layer4_plot)
 
 
+
   # Display the bubble plot
-#windows()
-#gridExtra::grid.arrange(species_elev_woody_grazing_soil_density_summary_layer1_plot, 
-#             species_elev_woody_grazing_soil_density_summary_layer2_plot,
-#             species_elev_woody_grazing_soil_density_summary_layer3_plot,
-#             species_elev_woody_grazing_soil_density_summary_layer4_plot, nrow = 2)
+windows()
+gridExtra::grid.arrange(species_elev_woody_grazing_soil_density_summary_layer1_plot, 
+             species_elev_woody_grazing_soil_density_summary_layer2_plot,
+             species_elev_woody_grazing_soil_density_summary_layer3_plot,
+             species_elev_woody_grazing_soil_density_summary_layer4_plot,
+             nrow = 1)
 
 
 
