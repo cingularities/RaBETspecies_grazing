@@ -39,7 +39,7 @@ options(scipen = 100, digits = 4)
 
 
 ###SRER Percent Cover###
-srer_cover <- read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/srer_landuse_freq_082624.csv') %>% dplyr::select(-freq_NaN)%>% na.omit() 
+srer_cover <- read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/srer_landuse_freq_082724.csv') %>% dplyr::select(-freq_NaN)%>% na.omit() 
 srer_mesquite <- srer_cover %>% dplyr::select(-c(cactus,creosote,paloverde,lotebush,bareground,grass)) %>% rename(cover = mesquite) %>% mutate(species="mesquite")%>% na.omit()
 srer_cactus <- srer_cover %>% dplyr::select(-c(mesquite,creosote,paloverde,lotebush,bareground,grass))%>% rename(cover= cactus) %>% mutate(species="cactus")%>% na.omit()
 srer_creosote <- srer_cover %>% dplyr::select(-c(cactus,mesquite,paloverde,lotebush,bareground,grass))%>% rename(cover= creosote) %>% mutate(species="creosote")%>% na.omit()
@@ -60,19 +60,19 @@ srer_cover_rbind <- rbind(srer_mesquite,srer_cactus) %>%
 srer_cover_rbind_bg<-rbind(srer_bareground,srer_grass)%>%
   na.omit()
 
-#write.csv(srer_cover_rbind, 'srer_cover_rbind_082624.csv')%>%
+#write.csv(srer_cover_rbind, 'srer_cover_rbind_082724.csv')%>%
 
 
 
 
 ##DENSITY#
 ###SRER###
-srer_density <- read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/densities_final_SRER_082624.csv')%>% mutate(grazing = as.numeric(ifelse(AUY_per_ha >= 300, '1','0')))%>%
+srer_density <- read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/densities_final_SRER_082724.csv')%>% mutate(grazing = as.numeric(ifelse(AUY_per_ha >= 300, '1','0')))%>%
 dplyr::filter(case_when(layer==1 ~ MUSYM == "EbC",
                    layer==2 ~ MUSYM == "An" |MUSYM =="EbC"|MUSYM =="SoB",
                    layer==3 ~ MUSYM == "An" |MUSYM == "SoB",
                    layer==4 ~ MUSYM == "CtB" |MUSYM == "CuC"))
-#write.csv(srer_density, 'srer_density_082624.csv')
+#write.csv(srer_density, 'srer_density_082724.csv')
 
 #srer_density_nograzing <- srer_density %>% filter(grazing == 0)
 #srer_density_grazing <- srer_density %>% filter(grazing == 1)
@@ -91,11 +91,11 @@ dplyr::filter(case_when(layer==1 ~ MUSYM == "EbC",
 
 #CROWN AREA#
 ##SRER##
-srer_mesquite_crownArea <-read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/mesquite_crownArea_df_srer_082624.csv')%>% mutate(species = "mesquite")
-srer_cactus_crownArea <-read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/cactus_crownArea_df_srer_082624.csv')%>% mutate(species = "cactus")
-srer_creosote_crownArea <-read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/creosote_crownArea_df_srer_082624.csv')%>% mutate(species = "creosote")
-srer_lotebush_crownArea <-read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/lotebush_crownArea_df_srer_082624.csv')%>% mutate(species = "lotebush")
-srer_paloverde_crownArea <-read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/paloverde_crownArea_df_srer_082624.csv')%>% mutate(species = "paloverde")
+srer_mesquite_crownArea <-read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/mesquite_crownArea_df_srer_082724.csv')%>% mutate(species = "mesquite")
+srer_cactus_crownArea <-read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/cactus_crownArea_df_srer_082724.csv')%>% mutate(species = "cactus")
+srer_creosote_crownArea <-read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/creosote_crownArea_df_srer_082724.csv')%>% mutate(species = "creosote")
+srer_lotebush_crownArea <-read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/lotebush_crownArea_df_srer_082724.csv')%>% mutate(species = "lotebush")
+srer_paloverde_crownArea <-read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/paloverde_crownArea_df_srer_082724.csv')%>% mutate(species = "paloverde")
 
 srer_crownarea <- rbind(srer_mesquite_crownArea,srer_cactus_crownArea,srer_creosote_crownArea,srer_lotebush_crownArea,srer_paloverde_crownArea)%>% 
   mutate(grazing = as.numeric(ifelse(AUY_per_ha > 300, '1','0')))%>%
@@ -103,7 +103,7 @@ srer_crownarea <- rbind(srer_mesquite_crownArea,srer_cactus_crownArea,srer_creos
                    FID_elevat==1 ~ MUSYM == "An" |MUSYM =="EbC"|MUSYM =="SoB",
                    FID_elevat==2 ~ MUSYM == "An" |MUSYM == "SoB",
                    FID_elevat==3 ~ MUSYM == "CtB" |MUSYM == "CuC"))
-#write.csv(srer_crownarea,'//gaea/projects/RaBET/RaBET_landuse/landuse/srer_crownarea_082624.csv')
+#write.csv(srer_crownarea,'//gaea/projects/RaBET/RaBET_landuse/landuse/srer_crownarea_082724.csv')
 #srer_crownarea_nograzing <- srer_crownarea %>% filter(grazing == 1)
 #srer_crownarea_grazing <- srer_crownarea %>% filter(grazing == 2)
 
@@ -138,7 +138,7 @@ grass = srer_cover_rbind_bg %>%
 
 all = rbind(species,grass) 
 # create a new dataframe crop_means_Se 
-#write.csv(all, 'all_species_cover_082624.csv')
+#write.csv(all, 'all_species_cover_082724.csv')
 
 windows()
 theme_set(theme_gray(base_size = 20, base_family = "") + 
@@ -176,7 +176,7 @@ species_density = srer_density %>%
             lower_limit=mean-sd)
 
 mean_density = sum(species_density$mean)
-#write.csv(species_density, 'all_species_density_082624.csv')
+#write.csv(species_density, 'all_species_density_082724.csv')
 
 
 
@@ -228,7 +228,7 @@ species_crownarea = srer_crownarea %>%
   mutate(w_stdev = sd_crownarea)%>%
   mutate(g_mean = mean_grass)%>%
   mutate(g_stdev = sd_grass)
-#write.csv(species_crownarea, 'all_species_crownarea_082624.csv')
+#write.csv(species_crownarea, 'all_species_crownarea_082724.csv')
 
 
 # create a new dataframe crop_means_Se 
@@ -277,7 +277,16 @@ woody_cover_summary <- srer_cover_rbind %>%
     cover_count = n(),
     cover_sd = sd(cover))%>%
   group_by(species)%>% summarise(across(cover_mean, ~ sum(., na.rm = TRUE)))
-write.csv(woody_cover_summary,"woody_cover_summary_082624.csv")
+write.csv(woody_cover_summary,"woody_cover_summary_082724.csv")
+
+elev_cover_summary <- srer_cover_rbind %>%
+  group_by(layer) %>%
+  summarise(
+    cover_mean = weighted.mean(cover),
+    cover_count = n(),
+    cover_sd = sd(cover))%>%
+  group_by(layer)%>% summarise(across(cover_mean, ~ sum(., na.rm = TRUE)))
+write.csv(elev_cover_summary,"elev_cover_summary_082724.csv")
 
 elev_woody_cover_summary <- srer_cover_rbind %>%
   group_by(layer,species) %>%
@@ -287,7 +296,8 @@ elev_woody_cover_summary <- srer_cover_rbind %>%
     cover_sd = sd(cover))%>%
 group_by(layer,species)%>% summarise(across(cover_mean, ~ sum(., na.rm = TRUE)))
 #summarise(n = n())
-write.csv(elev_woody_cover_summary,"elev_woody_cover_summary_082624.csv")
+write.csv(elev_woody_cover_summary,"elev_woody_cover_summary_082724.csv")
+
 
 soils_elev_woody_cover_summary <- srer_cover_rbind %>%
   group_by(layer,species,MUSYM) %>%
@@ -295,24 +305,40 @@ soils_elev_woody_cover_summary <- srer_cover_rbind %>%
     cover_mean = weighted.mean(cover),
     cover_count = n(),
     cover_sd = sd(cover))%>%group_by(layer,MUSYM,species)%>% summarise(across(cover_mean, ~ sum(., na.rm = TRUE)))
-write.csv(soils_elev_woody_cover_summary,"soils_elev_woody_summary_082624.csv")
-
-
-
+write.csv(soils_elev_woody_cover_summary,"soils_elev_woody_summary_082724.csv")
 
 
 
 
 
 ##density
-elev_woody_density_summary <- srer_density %>%
-  group_by(layer,species) %>%
+woody_density_summary <- srer_density %>%
+  group_by(species) %>%
+  summarise(
+    density_mean = weighted.mean(n),
+    density_count = n(),
+    density_sd = sd(n))%>%group_by(species)%>% summarise(across(density_mean, ~ sum(., na.rm = TRUE)))
+#summarise(n = n())
+write.csv(woody_density_summary,"woody_density_summary_082724.csv")
+
+elev_density_summary <- srer_density %>%
+  group_by(layer) %>%
   summarise(
     density_mean = weighted.mean(n),
     density_count = n(),
     density_sd = sd(n))%>%group_by(layer)%>% summarise(across(density_mean, ~ sum(., na.rm = TRUE)))
 #summarise(n = n())
-write.csv(elev_woody_density_summary,"elev_woody_density_summary_082624.csv")
+write.csv(elev_density_summary,"elev_density_summary_082724.csv")
+
+
+elev_woody_density_summary <- srer_density %>%
+  group_by(layer,species) %>%
+  summarise(
+    density_mean = weighted.mean(n),
+    density_count = n(),
+    density_sd = sd(n))%>%group_by(layer,species)%>% summarise(across(density_mean, ~ sum(., na.rm = TRUE)))
+#summarise(n = n())
+write.csv(elev_woody_density_summary,"elev_woody_density_summary_082724.csv")
 
 #SOILS
 soils_elev_woody_density_summary <- srer_density%>%
@@ -320,8 +346,8 @@ soils_elev_woody_density_summary <- srer_density%>%
   summarise(
     density_mean = weighted.mean(n),
     density_count = n(),
-    density_sd = sd(n))%>%group_by(layer,MUSYM)%>% summarise(across(density_mean, ~ sum(., na.rm = TRUE)))
-write.csv(soils_elev_woody_density_summary,"soils_elev_woody_density_summary_082624.csv")
+    density_sd = sd(n))%>%group_by(layer,MUSYM,species)%>% summarise(across(density_mean, ~ sum(., na.rm = TRUE)))
+write.csv(soils_elev_woody_density_summary,"soils_elev_woody_density_summary_082724.csv")
 
 
 
@@ -331,126 +357,40 @@ write.csv(soils_elev_woody_density_summary,"soils_elev_woody_density_summary_082
 
 
 ##crownarea
-elev_woody_crownArea_summary <- srer_crownarea %>%
-  group_by(layer,species) %>%
+woody_crownArea_summary <- srer_crownarea %>%
+  group_by(species) %>%
+  summarise(
+    crownArea_mean = weighted.mean(crownArea),
+    crownArea_count = n(),
+    crownArea_sd = sd(crownArea))%>%group_by(species)%>% summarise(across(crownArea_mean, ~ mean(., na.rm = TRUE)))
+#summarise(n = n())
+write.csv(woody_crownArea_summary,"woody_crownArea_summary_082724.csv")
+
+elev_crownArea_summary <- srer_crownarea %>%
+  group_by(layer) %>%
   summarise(
     crownArea_mean = weighted.mean(crownArea),
     crownArea_count = n(),
     crownArea_sd = sd(crownArea))%>%group_by(layer)%>% summarise(across(crownArea_mean, ~ mean(., na.rm = TRUE)))
 #summarise(n = n())
-#write.csv(elev_woody_crownArea_summary,"elev_woody_crownArea_summary_082624.csv")
+write.csv(elev_crownArea_summary,"elev_crownArea_summary_082724.csv")
 
-soils_elev_woody_crownArea_summary <- srer_crownarea%>%
-  group_by(layer,species,MUSYM) %>%
-  summarise(
-    crownArea_mean = weighted.mean(crownArea),
-    crownArea_count = n(),
-    crownArea_sd = sd(crownArea))%>%group_by(layer,MUSYM)%>% summarise(across(crownArea_mean, ~ mean(., na.rm = TRUE)))
-#write.csv(soils_elev_woody_crownArea_summary,"soils_elev_woody_crownArea_summary_082624.csv")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-####summarizing elevation, species and soils####
-#LAYER
-
-woody_species_cover_summary <- srer_cover_rbind %>%
-  group_by(species) %>%
-  summarise(
-    cover_mean = weighted.mean(cover),
-    cover_count = n(),
-    cover_sd = sd(cover))%>%group_by(species)%>% summarise(across(cover_mean, ~ sum(., na.rm = TRUE)))
-#summarise(n = n())
-write.csv(woody_species_cover_summary,"woody_species_cover_species_summary_082624.csv")
-
-elev_woody_species_cover_summary <- srer_cover_rbind %>%
-  group_by(layer,species) %>%
-  summarise(
-    cover_mean = weighted.mean(cover),
-    cover_count = n(),
-    cover_sd = sd(cover))%>%group_by(layer,species)%>% summarise(across(cover_mean, ~ sum(., na.rm = TRUE)))
-#summarise(n = n())
-write.csv(elev_woody_species_cover_summary,"elev_woody_species_cover_species_summary_082624.csv")
-
-
-soils_elev_woody_species_cover_summary <- srer_cover_rbind %>%
-  group_by(layer,species,MUSYM) %>%
-  summarise(
-    cover_mean = weighted.mean(cover),
-    cover_count = n(),
-    cover_sd = sd(cover))%>%group_by(layer,MUSYM,species)%>% summarise(across(cover_mean, ~ sum(., na.rm = TRUE)))
-write.csv(soils_elev_woody_species_cover_summary,"soils_elev_woody_species_summary_082624.csv")
-
-
-
-
-
-
-##density
-
-##density
-woody_species_density_summary <- srer_density %>%
-  group_by(species) %>%
-  summarise(
-    density_mean = weighted.mean(n),
-    density_count = n(),
-    density_sd = sd(n))%>%group_by(species)%>% summarise(across(density_mean, ~ sum(., na.rm = TRUE)))
-#summarise(n = n())
-write.csv(woody_species_density_summary,"woody_species_density_summary_082624.csv")
-
-#SOILS
-elev_woody_species_density_summary <- srer_density %>%
-  group_by(layer,species) %>%
-  summarise(
-    density_mean = weighted.mean(n),
-    density_count = n(),
-    density_sd = sd(n))%>%group_by(layer,species)%>% summarise(across(density_mean, ~ sum(., na.rm = TRUE)))
-#summarise(n = n())
-write.csv(elev_woody_species_density_summary,"elev_woody_species_density_summary_082624.csv")
-
-#SOILS
-soils_elev_woody_species_density_summary <- srer_density%>%
-  group_by(layer,species,MUSYM) %>%
-  summarise(
-    density_mean = weighted.mean(n),
-    density_count = n(),
-    density_sd = sd(n))%>%group_by(layer,MUSYM,species)%>% summarise(across(density_mean, ~ sum(., na.rm = TRUE)))
-write.csv(soils_elev_woody_species_density_summary,"soils_elev_woody_species_density_summary_082624.csv")
-
-
-
-
-
-
-##crownarea
-elev_woody_species_crownArea_summary <- srer_crownarea %>%
+elev_woody_crownArea_summary <- srer_crownarea %>%
   group_by(layer,species) %>%
   summarise(
     crownArea_mean = weighted.mean(crownArea),
     crownArea_count = n(),
     crownArea_sd = sd(crownArea))%>%group_by(layer,species)%>% summarise(across(crownArea_mean, ~ mean(., na.rm = TRUE)))
 #summarise(n = n())
-write.csv(elev_woody_species_crownArea_summary,"elev_woody_species_crownArea_summary_082624.csv")
+write.csv(elev_woody_crownArea_summary,"elev_woody_crownArea_summary_082724.csv")
 
-soils_elev_woody_species_crownArea_summary <- srer_crownarea%>%
+soils_elev_woody_crownArea_summary <- srer_crownarea%>%
   group_by(layer,species,MUSYM) %>%
   summarise(
     crownArea_mean = weighted.mean(crownArea),
     crownArea_count = n(),
     crownArea_sd = sd(crownArea))%>%group_by(layer,MUSYM,species)%>% summarise(across(crownArea_mean, ~ mean(., na.rm = TRUE)))
-write.csv(soils_elev_woody_species_crownArea_summary,"soils_elev_woody_species_crownArea_summary_082624.csv")
+write.csv(soils_elev_woody_crownArea_summary,"soils_elev_woody_crownArea_summary_082724.csv")
 
 
 
@@ -469,207 +409,93 @@ write.csv(soils_elev_woody_species_crownArea_summary,"soils_elev_woody_species_c
 
 
 
-###############SUMMARIZING elevation, soils, grazing#############
-##Elevation##
+
+
+
+
+
+
+
+
+###############SUMMARIZING elevation,  soils, grazing#############
+##Elevation, species and soils##
 elev_woody_grazing_cover_p <- srer_cover_rbind %>%
-  group_by(layer,FID_srer_g,grazing) %>%
-  summarise(
-    cover_sum = sum(cover),
-    cover_count = n(),
-    cover_sd = sd(cover))%>%
-   group_by(layer)%>%
-   summarise(grazing_avg = t.test(cover_sum[grazing==0], cover_sum[grazing==1])$p.value)
+  group_by(  layer) %>%
+  summarise(grazing_avg = t.test(cover[grazing==0], cover[grazing==1])$p.value)
 #summarise(n = n())
 
 elev_woody_grazing_cover_mean <- srer_cover_rbind %>%
-  group_by(layer,FID_srer_g,grazing) %>%
+  group_by(  layer, grazing) %>%
   summarise(
-    cover_sum = sum(cover),
+    cover_mean = weighted.mean(cover),
     cover_count = n(),
-    cover_sd = sd(cover))%>%
-  group_by(layer,grazing)%>%
-  summarise(
-    cover_mean = weighted.mean(cover_sum),
-    cover_count = n(),
-    cover_sd = sd(cover_sum))
+    cover_sd = sd(cover))
 #summarise(n = n())
-elev_woody_grazing_cover_summary = elev_woody_grazing_cover_mean%>% 
-  left_join(elev_woody_grazing_cover_p, by = c( 'layer'))%>%filter(grazing_avg < 0.05)
+elev_woody_grazing_cover_summary = elev_woody_grazing_cover_mean%>%
+  left_join(elev_woody_grazing_cover_p, by = c("layer"))
 
-write.csv(elev_woody_grazing_cover_summary,"elev_woody_grazing_cover_summary_082624.csv")
-#write.csv(elev_woody_grazing_cover_p,"elev_woody_grazing_cover_p_082624.csv")
-
-
+write.csv(elev_woody_grazing_cover_summary,"elev_woody_grazing_cover_summary_082724.csv")
+#write.csv(elev_woody_grazing_cover_p,"elev_woody_grazing_cover_p_082724.csv")
 
 
 
 
 
 
-
-
-
-
-elev_woody_grazing_density_p <- srer_density %>%
-  group_by(layer,FID_srer_g,grazing) %>%
-  summarise(grazing_avg = t.test(n[grazing==0], n[grazing==1])$p.value)%>%
-  summarise(
-    density_mean = sum(n),
-    density_count = n(),
-    density_sd = sd(n))%>%
-  group_by(layer)%>%
-#summarise(n = n())
+##Elevation, species and soils##
+elev_woody_grazing_density_p <- srer_density  %>%
+  group_by(layer) %>%
+  summarise(grazing_avg = t.test(n[grazing==0], n[grazing==1])$p.value)
 
 elev_woody_grazing_density_mean <- srer_density %>%
-  group_by(layer,FID_srer_g,grazing) %>%
+  group_by(  layer, grazing) %>%
   summarise(
-    density_sum = sum(n),
+    density_mean = weighted.mean(n),
     density_count = n(),
-    density_sd = sd(n))%>%
-  group_by(layer,grazing)%>%
-  summarise(
-    density_mean = weighted.mean(density_sum),
-    density_count = n(),
-    density_sd = sd(density_sum))
+    density_sd = sd(n)
+  )
 #summarise(n = n())
 elev_woody_grazing_density_summary = elev_woody_grazing_density_mean%>% 
-  left_join(elev_woody_grazing_density_p, by = c( 'layer'))%>%filter(grazing_avg < 0.05)
+  left_join(elev_woody_grazing_density_p, by = c('layer'))
 
-#write.csv(elev_woody_grazing_density_p,"elev_woody_grazing_density_p_082624.csv")
-write.csv(elev_woody_grazing_density_summary,"elev_woody_grazing_density_summary_082624.csv")
+#write.csv(elev_woody_grazing_density_p,"elev_woody_grazing_density_p_090123.csv")
+write.csv(elev_woody_grazing_density_summary,"elev_woody_grazing_density_summary_082724.csv")
+
+
+
 
 #srer_crownarea <- read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/elev_woody_grazing_crownarea_mean.csv')
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+##Elevation, species and soils##
 elev_woody_grazing_crownarea_p <- srer_crownarea %>%
-  group_by(layer,FID_srer_g,grazing) %>%
-  summarise(
-    crownarea_mean = weighted.mean(crownArea),
-    crownarea_count = n(),
-    crownarea_sd = sd(crownArea))%>%
-  group_by(layer)%>%
-  summarise(grazing_avg = t.test(crownarea_mean[grazing==0], crownarea_mean[grazing==1])$p.value)
-#summarise(n = n())
+  group_by(layer) %>%
+  summarise(grazing_avg = t.test(crownArea[grazing == 0], crownArea[grazing == 1])$p.value)
 
-elev_woody_grazing_crownarea_mean <- srer_crownarea %>%
-  group_by(layer,FID_srer_g,grazing) %>%
+
+elev_woody_grazing_crownarea_mean <- srer_crownarea%>%
+  group_by(  layer, grazing) %>%
   summarise(
-    crownarea_sum = weighted.mean(crownArea),
-    crownarea_count = n(),
-    crownarea_sd = sd(crownArea))%>%
-  group_by(layer,grazing)%>%
-  summarise(
-    crownarea_mean = weighted.mean(crownarea_sum),
-    crownarea_count = n(),
-    crownarea_sd = sd(crownarea_sum))
-#summarise(n = n())
+    crownArea_mean = weighted.mean(crownArea),
+    crownArea_count = n(),
+    crownArea_sd = sd(crownArea)
+  )
+
 elev_woody_grazing_crownarea_summary = elev_woody_grazing_crownarea_mean%>% 
-  left_join(elev_woody_grazing_crownarea_p, by = c( 'layer'))%>%filter(grazing_avg < 0.05)
+  left_join(elev_woody_grazing_crownarea_p, by = c( 'layer'))
 
-write.csv(elev_woody_grazing_crownarea_summary,"elev_woody_grazing_crownarea_summary_082624.csv")
-#write.csv(elev_woody_grazing_crownarea_p,"elev_woody_grazing_crownarea_summary_p_082624.csv")
-
-##SOILS##
-soils_elev_woody_grazing_cover_p <- srer_cover_rbind %>%
-  group_by(layer,FID_srer_g,grazing, MUSYM) %>%
-  summarise(
-    cover_sum = sum(cover),
-    cover_count = n(),
-    cover_sd = sd(cover))%>%
-  group_by(layer,MUSYM)%>%
-  summarise(grazing_avg = t.test(cover_sum[grazing==0], cover_sum[grazing==1])$p.value)
-#summarise(n = n())
-
-soils_elev_woody_grazing_cover_mean <- srer_cover_rbind %>%
-  group_by(layer,FID_srer_g,grazing,MUSYM) %>%
-  summarise(
-    cover_sum = sum(cover),
-    cover_count = n(),
-    cover_sd = sd(cover))%>%
-  group_by(layer,grazing,MUSYM)%>%
-  summarise(
-    cover_mean = weighted.mean(cover_sum),
-    cover_count = n(),
-    cover_sd = sd(cover_sum))
-#summarise(n = n())
-soils_elev_woody_grazing_cover_summary = soils_elev_woody_grazing_cover_mean%>% 
-  left_join(soils_elev_woody_grazing_cover_p, by = c( 'layer','MUSYM'))%>%filter(grazing_avg < 0.05)
-
-write.csv(soils_elev_woody_grazing_cover_summary,"soils_elev_woody_grazing_cover_summary_082624.csv")
-#write.csv(soils_elev_woody_grazing_cover_p,"soils_elev_woody_grazing_cover_p_090123.csv")
+write.csv(elev_woody_grazing_crownarea_summary,"elev_woody_grazing_crownarea_summary_082724.csv")
+#write.csv(elev_woody_grazing_crownarea_p,"elev_woody_grazing_crownarea_summary_082724.csv")
 
 
-soils_elev_woody_grazing_density_p <- srer_density %>%
-  group_by(layer,FID_srer_g,grazing,MUSYM) %>%
-  summarise(
-    density_mean = sum(n),
-    density_count = n(),
-    density_sd = sd(n))%>%
-  group_by(layer,MUSYM)%>%
-  summarise(grazing_avg = t.test(density_mean[grazing==0], density_mean[grazing==1])$p.value)
-#summarise(n = n())
-
-soils_elev_woody_grazing_density_mean <- srer_density %>%
-  group_by(layer,FID_srer_g,grazing,MUSYM) %>%
-  summarise(
-    density_sum = sum(n),
-    density_count = n(),
-    density_sd = sd(n))%>%
-  group_by(layer,grazing,MUSYM)%>%
-  summarise(
-    density_mean = weighted.mean(density_sum),
-    density_count = n(),
-    density_sd = sd(density_sum))
-#summarise(n = n())
-soils_elev_woody_grazing_density_summary = soils_elev_woody_grazing_density_mean%>% 
-  left_join(soils_elev_woody_grazing_density_p, by = c( 'layer','MUSYM'))%>%filter(grazing_avg < 0.05)
-
-#write.csv(soils_elev_woody_grazing_density_p,"soils_elev_woody_grazing_density_p_082624.csv")
-write.csv(soils_elev_woody_grazing_density_summary,"soils_elev_woody_grazing_density_summary_082624.csv")
-
-#srer_crownarea <- read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/soils_elev_woody_grazing_crownarea_mean.csv')
 
 
-soils_elev_woody_grazing_crownarea_p <- srer_crownarea %>%
-  group_by(layer,FID_srer_g,grazing,MUSYM) %>%
-  summarise(
-    crownarea_mean = weighted.mean(crownArea),
-    crownarea_count = n(),
-    crownarea_sd = sd(crownArea))%>%
-  group_by(layer,MUSYM)%>%
-  summarise(grazing_avg = t.test(crownarea_mean[grazing==1], crownarea_mean[grazing==2])$p.value)
-#summarise(n = n())
 
-soils_elev_woody_grazing_crownarea_mean <- srer_crownarea %>%
-  group_by(layer,FID_srer_g,grazing,MUSYM) %>%
-  summarise(
-    crownarea_sum = weighted.mean(crownArea),
-    crownarea_count = n(),
-    crownarea_sd = sd(crownArea))%>%
-  group_by(layer,grazing,MUSYM)%>%
-  summarise(
-    crownarea_mean = weighted.mean(crownarea_sum),
-    crownarea_count = n(),
-    crownarea_sd = sd(crownarea_sum))
-#summarise(n = n())
-soils_elev_woody_grazing_crownarea_summary = soils_elev_woody_grazing_crownarea_mean%>% 
-  left_join(soils_elev_woody_grazing_crownarea_p, by = c( 'layer','MUSYM'))%>%filter(grazing_avg < 0.05)
 
-write.csv(soils_elev_woody_grazing_crownarea_summary,"soils_elev_woody_grazing_crownarea_summary_082624.csv")
-#write.csv(soils_elev_woody_grazing_crownarea_p,"soils_elev_woody_grazing_crownarea_summary_p_082624.csv")
+
+
+
+
+
+
 
 
 
@@ -739,6 +565,112 @@ write.csv(soils_elev_woody_grazing_crownarea_summary,"soils_elev_woody_grazing_c
 
 ###############SUMMARIZING elevation, species, soils, grazing#############
 ##Elevation, species and soils##
+species_elev_woody_grazing_cover_p <- srer_cover_rbind %>%
+  group_by( species, layer) %>%
+  summarise(grazing_avg = t.test(cover[grazing==0], cover[grazing==1])$p.value)
+#summarise(n = n())
+
+species_elev_woody_grazing_cover_mean <- srer_cover_rbind %>%
+  group_by( species, layer, grazing) %>%
+  summarise(
+    cover_mean = weighted.mean(cover),
+    cover_count = n(),
+    cover_sd = sd(cover))
+#summarise(n = n())
+species_elev_woody_grazing_cover_summary = species_elev_woody_grazing_cover_mean%>%
+  left_join(species_elev_woody_grazing_cover_p, by = c('species', 'layer'))
+
+write.csv(species_elev_woody_grazing_cover_summary,"species_elev_woody_grazing_cover_summary_082724.csv")
+#write.csv(species_elev_woody_grazing_cover_p,"species_elev_woody_grazing_cover_p_082724.csv")
+
+
+
+
+
+
+##Elevation, species and soils##
+species_elev_woody_grazing_density_p <- srer_density  %>%
+  group_by(layer,species) %>%
+  summarise(grazing_avg = t.test(n[grazing==0], n[grazing==1])$p.value)
+
+species_elev_woody_grazing_density_mean <- srer_density %>%
+  group_by( species, layer, grazing) %>%
+  summarise(
+    density_mean = weighted.mean(n),
+    density_count = n(),
+    density_sd = sd(n)
+  )
+#summarise(n = n())
+species_elev_woody_grazing_density_summary = species_elev_woody_grazing_density_mean%>% 
+  left_join(species_elev_woody_grazing_density_p, by = c('species', 'layer'))
+
+#write.csv(species_elev_woody_grazing_density_p,"species_elev_woody_grazing_density_p_090123.csv")
+write.csv(species_elev_woody_grazing_density_summary,"species_elev_woody_grazing_density_summary_082724.csv")
+
+
+
+
+#srer_crownarea <- read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/species_elev_woody_grazing_crownarea_mean.csv')
+##Elevation, species and soils##
+species_elev_woody_grazing_crownarea_p <- srer_crownarea %>%
+  group_by(layer,  species) %>%
+  summarise(grazing_avg = t.test(crownArea[grazing == 0], crownArea[grazing == 1])$p.value)
+
+
+species_elev_woody_grazing_crownarea_mean <- srer_crownarea%>%
+  group_by( species, layer, grazing) %>%
+  summarise(
+    crownArea_mean = weighted.mean(crownArea),
+    crownArea_count = n(),
+    crownArea_sd = sd(crownArea)
+  )
+
+species_elev_woody_grazing_crownarea_summary = species_elev_woody_grazing_crownarea_mean%>% 
+  left_join(species_elev_woody_grazing_crownarea_p, by = c('species', 'layer'))
+
+write.csv(species_elev_woody_grazing_crownarea_summary,"species_elev_woody_grazing_crownarea_summary_082724.csv")
+#write.csv(species_elev_woody_grazing_crownarea_p,"species_elev_woody_grazing_crownarea_summary_082724.csv")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+###############SUMMARIZING elevation, species, soils, grazing#############
+##Elevation, species and soils##
 species_elev_woody_grazing_soil_cover_p <- srer_cover_rbind %>%
   group_by(MUSYM, species, layer) %>%
   summarise(grazing_avg = t.test(cover[grazing==0], cover[grazing==1])$p.value)
@@ -754,8 +686,8 @@ species_elev_woody_grazing_soil_cover_mean <- srer_cover_rbind %>%
 species_elev_woody_grazing_soil_cover_summary = species_elev_woody_grazing_soil_cover_mean%>%
 left_join(species_elev_woody_grazing_soil_cover_p, by = c('species', 'layer', 'MUSYM'))
 
-write.csv(species_elev_woody_grazing_soil_cover_summary,"species_elev_woody_grazing_soil_cover_summary_082624.csv")
-#write.csv(species_elev_woody_grazing_soil_cover_p,"species_elev_woody_grazing_soil_cover_p_082624.csv")
+write.csv(species_elev_woody_grazing_soil_cover_summary,"species_elev_woody_grazing_soil_cover_summary_082724.csv")
+#write.csv(species_elev_woody_grazing_soil_cover_p,"species_elev_woody_grazing_soil_cover_p_082724.csv")
 
 
 
@@ -779,7 +711,7 @@ species_elev_woody_grazing_soil_density_summary = species_elev_woody_grazing_soi
   left_join(species_elev_woody_grazing_soil_density_p, by = c('species', 'layer', 'MUSYM'))
 
 #write.csv(species_elev_woody_grazing_soil_density_p,"species_elev_woody_grazing_soil_density_p_090123.csv")
-write.csv(species_elev_woody_grazing_soil_density_summary,"species_elev_woody_grazing_soil_density_summary_082624.csv")
+write.csv(species_elev_woody_grazing_soil_density_summary,"species_elev_woody_grazing_soil_density_summary_082724.csv")
 
 
 
@@ -802,8 +734,8 @@ species_elev_woody_grazing_soil_crownarea_mean <- srer_crownarea%>%
 species_elev_woody_grazing_soil_crownarea_summary = species_elev_woody_grazing_soil_crownarea_mean%>% 
   left_join(species_elev_woody_grazing_soil_crownarea_p, by = c('species', 'layer', 'MUSYM'))
 
-write.csv(species_elev_woody_grazing_soil_crownarea_summary,"species_elev_woody_grazing_soil_crownarea_summary_082624.csv")
-#write.csv(species_elev_woody_grazing_soil_crownarea_p,"species_elev_woody_grazing_soil_crownarea_summary_082624.csv")
+write.csv(species_elev_woody_grazing_soil_crownarea_summary,"species_elev_woody_grazing_soil_crownarea_summary_082724.csv")
+#write.csv(species_elev_woody_grazing_soil_crownarea_p,"species_elev_woody_grazing_soil_crownarea_summary_082724.csv")
 
 
 
@@ -2299,6 +2231,109 @@ t.test(cactus_crownarea_nospike$crownArea_mean, cactus_crownarea_spike$crownArea
 t.test(whitethorn_crownarea_nospike$crownArea_mean, whitethorn_crownarea_spike$crownArea_mean, alternative = "less", var.equal = TRUE)
 wilcox.test(wgew_crownarea_spike$crownArea_mean,wgew_crownarea_nospike$crownArea_mean, alternative = "two.sided", mu=0)
 wilcox.test(mesquite_crownarea_nospike$crownArea_mean, mesquite_crownarea_spike$crownArea_mean, alternative = "two.sided")
+
+
+
+
+
+
+
+
+
+####summarizing elevation, species and soils####
+#LAYER
+
+woody_species_cover_summary <- srer_cover_rbind %>%
+  group_by(species) %>%
+  summarise(
+    cover_mean = weighted.mean(cover),
+    cover_count = n(),
+    cover_sd = sd(cover))%>%group_by(species)%>% summarise(across(cover_mean, ~ sum(., na.rm = TRUE)))
+#summarise(n = n())
+write.csv(woody_species_cover_summary,"woody_species_cover_species_summary_082724.csv")
+
+elev_woody_species_cover_summary <- srer_cover_rbind %>%
+  group_by(layer,species) %>%
+  summarise(
+    cover_mean = weighted.mean(cover),
+    cover_count = n(),
+    cover_sd = sd(cover))%>%group_by(layer,species)%>% summarise(across(cover_mean, ~ sum(., na.rm = TRUE)))
+#summarise(n = n())
+write.csv(elev_woody_species_cover_summary,"elev_woody_species_cover_species_summary_082724.csv")
+
+
+soils_elev_woody_species_cover_summary <- srer_cover_rbind %>%
+  group_by(layer,species,MUSYM) %>%
+  summarise(
+    cover_mean = weighted.mean(cover),
+    cover_count = n(),
+    cover_sd = sd(cover))%>%group_by(layer,MUSYM,species)%>% summarise(across(cover_mean, ~ sum(., na.rm = TRUE)))
+write.csv(soils_elev_woody_species_cover_summary,"soils_elev_woody_species_summary_082724.csv")
+
+
+
+
+
+
+##density
+
+##density
+woody_species_density_summary <- srer_density %>%
+  group_by(species) %>%
+  summarise(
+    density_mean = weighted.mean(n),
+    density_count = n(),
+    density_sd = sd(n))%>%group_by(species)%>% summarise(across(density_mean, ~ sum(., na.rm = TRUE)))
+#summarise(n = n())
+write.csv(woody_species_density_summary,"woody_species_density_summary_082724.csv")
+
+#SOILS
+elev_woody_species_density_summary <- srer_density %>%
+  group_by(layer,species) %>%
+  summarise(
+    density_mean = weighted.mean(n),
+    density_count = n(),
+    density_sd = sd(n))%>%group_by(layer,species)%>% summarise(across(density_mean, ~ sum(., na.rm = TRUE)))
+#summarise(n = n())
+write.csv(elev_woody_species_density_summary,"elev_woody_species_density_summary_082724.csv")
+
+#SOILS
+soils_elev_woody_species_density_summary <- srer_density%>%
+  group_by(layer,species,MUSYM) %>%
+  summarise(
+    density_mean = weighted.mean(n),
+    density_count = n(),
+    density_sd = sd(n))%>%group_by(layer,MUSYM,species)%>% summarise(across(density_mean, ~ sum(., na.rm = TRUE)))
+write.csv(soils_elev_woody_species_density_summary,"soils_elev_woody_species_density_summary_082724.csv")
+
+
+
+
+
+
+##crownarea
+elev_woody_species_crownArea_summary <- srer_crownarea %>%
+  group_by(layer,species) %>%
+  summarise(
+    crownArea_mean = weighted.mean(crownArea),
+    crownArea_count = n(),
+    crownArea_sd = sd(crownArea))%>%group_by(layer,species)%>% summarise(across(crownArea_mean, ~ mean(., na.rm = TRUE)))
+#summarise(n = n())
+write.csv(elev_woody_species_crownArea_summary,"elev_woody_species_crownArea_summary_082724.csv")
+
+soils_elev_woody_species_crownArea_summary <- srer_crownarea%>%
+  group_by(layer,species,MUSYM) %>%
+  summarise(
+    crownArea_mean = weighted.mean(crownArea),
+    crownArea_count = n(),
+    crownArea_sd = sd(crownArea))%>%group_by(layer,MUSYM,species)%>% summarise(across(crownArea_mean, ~ mean(., na.rm = TRUE)))
+write.csv(soils_elev_woody_species_crownArea_summary,"soils_elev_woody_species_crownArea_summary_082724.csv")
+
+
+
+
+
+
 
 
 
