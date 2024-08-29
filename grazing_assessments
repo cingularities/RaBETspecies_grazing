@@ -3,7 +3,7 @@
 #Script written by Cynthia Norton
 
 #install.packages('BSDA')
-Packages <- c('viridis','RANN','fields','VoxR','remotes','readxl','spanner',"dplR","dplyr","tidyr", "lidR", 'TreeLS',"sf","tibble","ggplot2","tidyverse")
+Packages <- c('viridis','RANN','fields','VoxR','fmsb','remotes','readxl','spanner',"dplR","dplyr","tidyr", "lidR", 'TreeLS',"sf","tibble","ggplot2","tidyverse")
 lapply(Packages, library, character.only = TRUE)
 setwd("//gaea/projects/RaBET/RaBET_landuse/landuse/")
 options(scipen = 100, digits = 4)
@@ -44,10 +44,10 @@ srer_cover_rbind_bg<-rbind(srer_bareground,srer_grass)%>%
 ##DENSITY#
 ###SRER###
 srer_density <- read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/densities_final_SRER_082624.csv')%>% mutate(grazing = as.numeric(ifelse(AUY_per_ha >= 300, '1','0')))%>%
-dplyr::filter(case_when(layer==1 ~ MUSYM == "EbC",
-                   layer==2 ~ MUSYM == "An" |MUSYM =="EbC"|MUSYM =="SoB",
-                   layer==3 ~ MUSYM == "An" |MUSYM == "SoB",
-                   layer==4 ~ MUSYM == "CtB" |MUSYM == "CuC"))
+  dplyr::filter(case_when(layer==1 ~ MUSYM == "EbC",
+                          layer==2 ~ MUSYM == "An" |MUSYM =="EbC"|MUSYM =="SoB",
+                          layer==3 ~ MUSYM == "An" |MUSYM == "SoB",
+                          layer==4 ~ MUSYM == "CtB" |MUSYM == "CuC"))
 #write.csv(srer_density, 'srer_density_082724.csv')
 
 #srer_density_nograzing <- srer_density %>% filter(grazing == 0)
@@ -322,7 +322,7 @@ species_density = srer_density %>%
             upper_limit=mean+sd,  
             lower_limit=mean-sd)
 
- 
+
 
 mean_density = sum(species_density$mean)
 #write.csv(species_density, 'all_species_density_082724.csv')
@@ -438,77 +438,10 @@ species_elev_woody_grazing_soil_cover_mean <- srer_cover_rbind %>%
     cover_sd = sd(cover))
 #summarise(n = n())
 species_elev_woody_grazing_soil_cover_summary = species_elev_woody_grazing_soil_cover_mean%>%
-left_join(species_elev_woody_grazing_soil_cover_p, by = c('species', 'layer', 'MUSYM'))
+  left_join(species_elev_woody_grazing_soil_cover_p, by = c('species', 'layer', 'MUSYM'))
 
-##write.csv(species_elev_woody_grazing_soil_cover_summary,"species_elev_woody_grazing_soil_cover_summary_082824.csv")
-###write.csv(species_elev_woody_grazing_soil_cover_p,"species_elev_woody_grazing_soil_cover_p_082824.csv")
-
-
-
-
-
-
-##Elevation, species and soils##
-species_elev_woody_grazing_soil_density_p <- srer_density  %>%
-  group_by(layer,MUSYM,species) %>%
-  summarise(grazing_avg = t.test(n[grazing==0], n[grazing==1])$p.value)
-
-species_elev_woody_grazing_soil_density_mean <- srer_density %>%
-  group_by(MUSYM, species, layer, grazing) %>%
-  summarise(
-    density_mean = weighted.mean(n),
-    density_count = n(),
-    density_sd = sd(n)
-  )
-#summarise(n = n())
-species_elev_woody_grazing_soil_density_summary = species_elev_woody_grazing_soil_density_mean%>% 
-  left_join(species_elev_woody_grazing_soil_density_p, by = c('species', 'layer', 'MUSYM'))
-
-###write.csv(species_elev_woody_grazing_soil_density_p,"species_elev_woody_grazing_soil_density_p_090123.csv")
-##write.csv(species_elev_woody_grazing_soil_density_summary,"species_elev_woody_grazing_soil_density_summary_082824.csv")
-
-
-
-
-#srer_crownarea <- read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/species_elev_woody_grazing_soil_crownarea_mean.csv')
-##Elevation, species and soils##
-species_elev_woody_grazing_soil_crownarea_p <- srer_crownarea %>%
-  group_by(layer, MUSYM, species) %>%
-  summarise(grazing_avg = t.test(crownArea[grazing == 0], crownArea[grazing == 1])$p.value)
-
-
-species_elev_woody_grazing_soil_crownarea_mean <- srer_crownarea%>%
-  group_by(MUSYM, species, layer, grazing) %>%
-  summarise(
-    crownArea_mean = weighted.mean(crownArea),
-    crownArea_count = n(),
-    crownArea_sd = sd(crownArea)
-  )
-
-species_elev_woody_grazing_soil_crownarea_summary = species_elev_woody_grazing_soil_crownarea_mean%>% 
-  left_join(species_elev_woody_grazing_soil_crownarea_p, by = c('species', 'layer', 'MUSYM'))
-
-##write.csv(species_elev_woody_grazing_soil_crownarea_summary,"species_elev_woody_grazing_soil_crownarea_summary_082824.csv")
-###write.csv(species_elev_woody_grazing_soil_crownarea_p,"species_elev_woody_grazing_soil_crownarea_summary_082824.csv")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#write.csv(species_elev_woody_grazing_soil_cover_summary,"species_elev_woody_grazing_soil_cover_summary_082824.csv")
+#write.csv(species_elev_woody_grazing_soil_cover_p,"species_elev_woody_grazing_soil_cover_p_082824.csv")
 
 
 
@@ -551,57 +484,6 @@ cover_layer4 <- species_elev_woody_grazing_soil_cover_summary %>%
   mutate(upper_limit=cover_mean+cover_sd)%>%
   mutate(lower_limit = ifelse(cover_mean - cover_sd < 0, 0, cover_mean - cover_sd))
 
-density_layer1 <- species_elev_woody_grazing_soil_density_summary %>% 
-  filter(layer==1)%>%
-  mutate(across(everything(), ~ round(., 0))) %>% 
-  filter(MUSYM == "EbC")%>%  
-  mutate(landuse = ifelse(grazing < 1, 'protected','grazing'))
-
-density_layer2 <- species_elev_woody_grazing_soil_density_summary %>% 
-  filter(layer==2)%>%
-  mutate(across(everything(), ~ round(., 0))) %>% 
-  filter(MUSYM == "An" |MUSYM =="EbC"|MUSYM =="SoB")%>%  
-  mutate(landuse = ifelse(grazing < 1, 'protected','grazing'))
-density_layer3 <- species_elev_woody_grazing_soil_density_summary %>% 
-  filter(layer==3)%>%
-  mutate(across(everything(), ~ round(., 0))) %>% 
-  filter(MUSYM == "An" |MUSYM == "SoB")%>%  
-  mutate(landuse = ifelse(grazing < 1, 'protected','grazing'))
-density_layer4 <- species_elev_woody_grazing_soil_density_summary %>% 
-  filter(layer==4)%>%
-  mutate(across(everything(), ~ round(., 0))) %>% 
-  filter(MUSYM == "CtB" |MUSYM == "CuC")%>%  
-  mutate(landuse = ifelse(grazing < 1, 'protected','grazing'))
-
-crownarea_layer1 <- species_elev_woody_grazing_soil_crownarea_summary %>% 
-  filter(layer==1)%>%
-  mutate(across(everything(), ~ round(., 2))) %>% 
-  filter(MUSYM == "EbC")%>%  mutate(landuse = ifelse(grazing < 1, 'protected','grazing'))
-
-crownarea_layer2 <- species_elev_woody_grazing_soil_crownarea_summary %>% 
-  filter(layer==2)%>%
-  mutate(across(everything(), ~ round(., 2))) %>% 
-  filter(MUSYM == "An" |MUSYM =="EbC"|MUSYM =="SoB")%>%  mutate(landuse = ifelse(grazing < 1, 'protected','grazing'))
-crownarea_layer3 <- species_elev_woody_grazing_soil_crownarea_summary %>% 
-  filter(layer==3)%>%
-  mutate(across(everything(), ~ round(., 2))) %>% 
-  filter(MUSYM == "An" |MUSYM == "SoB")%>%  mutate(landuse = ifelse(grazing < 1, 'protected','grazing'))
-crownarea_layer4 <- species_elev_woody_grazing_soil_crownarea_summary %>% 
-  filter(layer==4)%>%
-  mutate(across(everything(), ~ round(., 2))) %>% 
-  filter(MUSYM == "CtB" |MUSYM == "CuC")%>%  mutate(landuse = ifelse(grazing < 1, 'protected','grazing'))
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -618,8 +500,8 @@ cover_layer1_plot<- ggplot(cover_layer1, aes(x = species, y = cover_mean, fill =
   geom_errorbar(aes(ymin = lower_limit, ymax = upper_limit, linetype = as.factor(grazing)),  width = 0.4, position = position_dodge(width = 1),size=1)+
   scale_alpha_continuous(range = c(0.3, 1)) # Set alpha scale range
 
-    
-  
+
+
 windows()
 # Set theme with bold base elements
 theme_set(theme_gray(base_size = 30, base_family = "") + 
@@ -641,12 +523,12 @@ cover_layer2_plot<- ggplot(cover_layer2, aes(x = species, y = cover_mean, fill =
         axis.text.y=element_text(size=25),
         axis.title=element_text(size=30,face="bold"))+
   ylim(0,20)+  ylab("mean % cover")+
- geom_hline(aes(yintercept = 15.68), color = "red", linetype = "dashed", size = 1) + # Add horizontal lines at specific y-intercepts
- geom_hline(aes(yintercept = 13.80), color = "red", linetype = "dashed", size = 1)+  # Add horizontal lines at specific y-intercepts
- geom_hline(aes(yintercept = 13.52), color = "red", linetype = "dashed", size = 1) +  # Add horizontal lines at specific y-intercepts
- geom_hline(aes(yintercept = 14.22), color ='blue', linetype = "dashed", size = 1) + # Add horizontal lines at specific y-intercepts # Add horizontal lines at specific y-intercepts
- geom_errorbar(aes(ymin = lower_limit, ymax = upper_limit, linetype = as.factor(grazing)),  width = 0.4, position = position_dodge(width = 1),size=1)+
-scale_alpha_continuous(range = c(0.3, 0.8)) # Set alpha scale range
+  geom_hline(aes(yintercept = 15.68), color = "red", linetype = "dashed", size = 1) + # Add horizontal lines at specific y-intercepts
+  geom_hline(aes(yintercept = 13.80), color = "red", linetype = "dashed", size = 1)+  # Add horizontal lines at specific y-intercepts
+  geom_hline(aes(yintercept = 13.52), color = "red", linetype = "dashed", size = 1) +  # Add horizontal lines at specific y-intercepts
+  geom_hline(aes(yintercept = 14.22), color ='blue', linetype = "dashed", size = 1) + # Add horizontal lines at specific y-intercepts # Add horizontal lines at specific y-intercepts
+  geom_errorbar(aes(ymin = lower_limit, ymax = upper_limit, linetype = as.factor(grazing)),  width = 0.4, position = position_dodge(width = 1),size=1)+
+  scale_alpha_continuous(range = c(0.3, 0.8)) # Set alpha scale range
 
 windows()
 theme_set(theme_gray(base_size = 30, base_family = "") + 
@@ -668,9 +550,9 @@ cover_layer3_plot<- ggplot(cover_layer3, aes(x = species, y = cover_mean, fill =
         axis.text.y=element_text(size=25),
         axis.title=element_text(size=30,face="bold"))+
   ylim(0,20)+ylab("mean % cover")+
- geom_hline(aes(yintercept = 18.50), color = "red", linetype = "dashed", size = 1) + # Add horizontal lines at specific y-intercepts
- geom_hline(aes(yintercept = 16.35), color = "red", linetype = "dashed", size = 1)+
- geom_hline(aes(yintercept = 16.81), color = 'blue', linetype = "dashed", size = 1) + # Add horizontal lines at specific y-intercepts # Add horizontal lines at specific y-intercepts
+  geom_hline(aes(yintercept = 18.50), color = "red", linetype = "dashed", size = 1) + # Add horizontal lines at specific y-intercepts
+  geom_hline(aes(yintercept = 16.35), color = "red", linetype = "dashed", size = 1)+
+  geom_hline(aes(yintercept = 16.81), color = 'blue', linetype = "dashed", size = 1) + # Add horizontal lines at specific y-intercepts # Add horizontal lines at specific y-intercepts
   geom_errorbar(aes(ymin = lower_limit, ymax = upper_limit, linetype = as.factor(grazing)),  width = 0.4, position = position_dodge(width = 1),size=1)+
   scale_alpha_continuous(range = c(0.3, 0.8)) # Set alpha scale range
 windows()
@@ -694,10 +576,10 @@ cover_layer4_plot<- ggplot(cover_layer4, aes(x = species, y = cover_mean, fill =
         axis.text.y=element_text(size=25),
         axis.title=element_text(size=30,face="bold"))+
   ylim(0,43)+ylab("mean % cover")+ # Center and bold the title
- geom_hline(aes(yintercept = 42.09), color = "red", linetype = "dashed", size = 1) + # Add horizontal lines at specific y-intercepts
- geom_hline(aes(yintercept = 34.98), color = "red", linetype = "dashed", size = 1)+
+  geom_hline(aes(yintercept = 42.09), color = "red", linetype = "dashed", size = 1) + # Add horizontal lines at specific y-intercepts
+  geom_hline(aes(yintercept = 34.98), color = "red", linetype = "dashed", size = 1)+
   geom_hline(aes(yintercept = 39.00), color = "blue", linetype = "dashed", size = 1) + # Add horizontal lines at specific y-intercepts # Add horizontal lines at specific y-intercepts
-   geom_errorbar(aes(ymin = lower_limit, ymax = upper_limit, linetype = as.factor(grazing)),  width = 0.4, position = position_dodge(width = 1),size=1)+ scale_y_break(breaks=c(20, 35), scales=c(0.1, 0.1))+
+  geom_errorbar(aes(ymin = lower_limit, ymax = upper_limit, linetype = as.factor(grazing)),  width = 0.4, position = position_dodge(width = 1),size=1)+ scale_y_break(breaks=c(20, 35), scales=c(0.1, 0.1))+
   scale_alpha_continuous(range = c(0.3, 0.8)) # Set alpha scale range
 
 windows()
@@ -735,151 +617,37 @@ print(cover_layer4_plot)
 
 
 
-##density
-density_layer1_plot<- ggplot(density_layer1, aes(x = species, y = density_mean, fill = grazing)) +
-  geom_col(alpha = 0.4, position = "identity")
-
-density_layer2_plot<- ggplot(density_layer2, aes(x = species, y = density_mean, fill = grazing)) +
-  geom_col(alpha = 0.4, position = "identity") +
-  facet_wrap(~ MUSYM)
-
-density_layer3_plot<- ggplot(density_layer3, aes(x = species, y = density_mean, fill = grazing)) +
-  geom_col(alpha = 0.4, position = "identity") +
-  facet_wrap(~ MUSYM)
-
-density_layer4_plot<- ggplot(density_layer4, aes(x = species, y = density_mean, fill = grazing)) +
-  geom_col(alpha = 0.4, position = "identity") +
-  facet_wrap(~ MUSYM)
-#windows()
-#grid.arrange(density_layer1_plot, density_layer2_plot,density_layer3_plot,density_layer4_plot, nrow = 2)
 
 
+##Elevation, species and soils##
+species_elev_woody_grazing_soil_density_p <- srer_density  %>%
+  group_by(layer,MUSYM,species) %>%
+  summarise(grazing_avg = t.test(n[grazing==0], n[grazing==1])$p.value)
 
-##crownarea
-crownarea_layer1_plot<- ggplot(crownarea_layer1, aes(x = species, y = crownArea_mean, fill = grazing)) +
-  geom_col(alpha = 0.4, position = "identity")
-
-crownarea_layer2_plot<- ggplot(crownarea_layer2, aes(x = species, y = crownArea_mean, fill = grazing)) +
-  geom_col(alpha = 0.4, position = "identity") +
-  facet_wrap(~ MUSYM)
-
-crownarea_layer3_plot<- ggplot(crownarea_layer3, aes(x = species, y = crownArea_mean, fill = grazing)) +
-  geom_col(alpha = 0.4, position = "identity") +
-  facet_wrap(~ MUSYM)
-
-crownarea_layer4_plot<- ggplot(crownarea_layer4, aes(x = species, y = crownArea_mean, fill = grazing)) +
-  geom_col(alpha = 0.4, position = "identity") +
-  facet_wrap(~ MUSYM)
-
-
-#windows()
-#grid.arrange(crownarea_layer1_plot, crownarea_layer2_plot,crownarea_layer3_plot,crownarea_layer4_plot, nrow = 2)
-
-
-
-####make density plots density
-
-theme_set(theme_minimal())
-density_layer1_density <- srer_density %>% 
-  filter(layer==1)%>%
-  mutate_if(is.numeric, round)%>%
-  filter(MUSYM == "EbC")%>%  
-  mutate(landuse = ifelse(grazing > 1, 'grazing','protected'))
-density_layer2_density <- srer_density %>% 
-  filter(layer==2)%>%
-  mutate_if(is.numeric, round)%>%
-  filter(MUSYM == "An" |MUSYM =="EbC"|MUSYM =="SoB")%>%  
-  mutate(landuse = ifelse(grazing > 1, 'grazing','protected'))
-density_layer3_density <- srer_density %>% 
-  filter(layer==3)%>%
-  mutate_if(is.numeric, round)%>%
-  filter(MUSYM == "An" |MUSYM == "SoB")%>%  
-  mutate(landuse = ifelse(grazing > 1, 'grazing','protected'))
-density_layer4_density <- srer_density %>% 
-  filter(layer==4)%>%
-  mutate_if(is.numeric, round)%>%
-  filter(MUSYM == "CtB" |MUSYM == "CuC")%>%  
-  mutate(landuse = ifelse(grazing > 1, 'grazing','protected'))
-
-
-# The diamonds dataset is natively available with R.
-
-# Without transparency (left)
-#ggplot(data=density_layer1_density, aes(x=n, group=species, fill=grazing)) +
-#  facet_wrap(~MUSYM)+
-#  geom_density(adjust=1.5) +
-#  theme_ipsum()
-#p10
-density_elevation <- srer_density%>%
-  group_by(MUSYM, layer,species) %>%
+species_elev_woody_grazing_soil_density_mean <- srer_density %>%
+  group_by(MUSYM, species, layer, grazing) %>%
   summarise(
     density_mean = weighted.mean(n),
     density_count = n(),
     density_sd = sd(n)
   )
+#summarise(n = n())
+species_elev_woody_grazing_soil_density_summary = species_elev_woody_grazing_soil_density_mean%>% 
+  left_join(species_elev_woody_grazing_soil_density_p, by = c('species', 'layer', 'MUSYM'))
+
+#write.csv(species_elev_woody_grazing_soil_density_p,"species_elev_woody_grazing_soil_density_p_082824.csv")
+#write.csv(species_elev_woody_grazing_soil_density_summary,"species_elev_woody_grazing_soil_density_summary_082824.csv")
 
 
-# With transparency (right)
-p2 <- ggplot(data=diamonds, aes(x=price, group=cut, fill=cut)) +
-  geom_density(adjust=1.5, alpha=.4) +
-  theme_ipsum()
-
-density_layer1_density$species <- as.factor(density_layer1_density$species)
-density_layer1_density$grazing <- as.factor(density_layer1_density$grazing)
-density_layer2_density$species <- as.factor(density_layer2_density$species)
-density_layer2_density$grazing <- as.factor(density_layer2_density$grazing)
-density_layer3_density$species <- as.factor(density_layer3_density$species)
-density_layer3_density$grazing <- as.factor(density_layer3_density$grazing)
-density_layer4_density$species <- as.factor(density_layer4_density$species)
-density_layer4_density$grazing <- as.factor(density_layer4_density$grazing)
 
 
-density_layer1_density_plot<-ggplot(data = density_layer1_density, aes(x = n, y = species, fill = grazing)) + facet_wrap(~MUSYM)+
-  ggridges::geom_density_ridges(quantile_lines=TRUE, quantile_fun=function(n,...)mean(n),scale = 1) + xlim(0, 300)+
-  scale_x_continuous(
-    limits = c(0, 10),  # Adjust the range as needed
-    breaks = seq(0, 10, by = 1),  # Specify the tick positions
-    labels = seq(0, 10, by = 1)  # Specify the tick labels
-  )+scale_fill_manual(values = alpha(c("red", "blue", "green"), alpha = 0.5))+ ggtitle("layer 1 cover")
 
-
-density_layer2_density_plot<-ggplot(data = density_layer2_density, aes(x = n, y = species, fill = grazing)) + facet_wrap(~MUSYM)+
-  ggridges::geom_density_ridges(quantile_lines=TRUE, quantile_fun=function(n,...)mean(n),scale = 1) + 
-  scale_x_continuous(
-    limits = c(0, 10),  # Adjust the range as needed
-    breaks = seq(0, 10, by = 1),  # Specify the tick positions
-    labels = seq(0, 10, by = 1)  # Specify the tick labels
-  )+scale_fill_manual(values = alpha(c("red", "blue", "green"), alpha = 0.5))+ ggtitle("layer 2 cover")
-
-
-density_layer3_density_plot<-ggplot(data = density_layer3_density, aes(x = n, y = species, fill = grazing)) + facet_wrap(~MUSYM)+
-  ggridges::geom_density_ridges(quantile_lines=TRUE, quantile_fun=function(n,...)mean(n),scale = 1) + 
-  scale_x_continuous(
-    limits = c(0, 15),  # Adjust the range as needed
-    breaks = seq(0, 15, by = 1),  # Specify the tick positions
-    labels = seq(0, 15, by = 1)  # Specify the tick labels
-  )+scale_fill_manual(values = alpha(c("red", "blue", "green"), alpha = 0.5))+ ggtitle("layer 3 cover")
-
-
-density_layer4_density_plot <- ggplot(data = density_layer4_density, aes(x = n, y = species, fill = grazing)) + 
-  facet_wrap(~MUSYM) +
-  ggridges::geom_density_ridges(quantile_lines = TRUE, quantile_fun = function(n, ...) mean(n), scale = 1) +
-  scale_x_continuous(
-    limits = c(0, 20),  # Adjust the x-axis range as needed
-    breaks = seq(0, 20, by = 1),  # Specify the x-axis tick positions
-    labels = seq(0, 20, by = 1)  # Specify the x-axis tick labels
-  ) +scale_fill_manual(values = alpha(c("red", "blue", "green"), alpha = 0.5))+ ggtitle("layer 4 cover")
-
-
-# Display the bubble plot
-#windows()
-#grid.arrange(density_layer1_density_plot, density_layer2_density_plot,density_layer3_density_plot,density_layer4_density_plot, nrow = 2)
 
 species_elev_woody_grazing_soil_density_summary_layer1 = species_elev_woody_grazing_soil_density_summary%>% filter(layer==1)
 species_elev_woody_grazing_soil_density_summary_layer2 = species_elev_woody_grazing_soil_density_summary%>% filter(layer==2)
 species_elev_woody_grazing_soil_density_summary_layer3 = species_elev_woody_grazing_soil_density_summary%>% filter(layer==3)
 species_elev_woody_grazing_soil_density_summary_layer4 = species_elev_woody_grazing_soil_density_summary%>% filter(layer==4)
-  
+
 species_elev_woody_grazing_soil_density_summary_layer1_plot =
   species_elev_woody_grazing_soil_density_summary_layer1%>%
   mutate(alpha = ifelse(grazing_avg > 0.1, 0.3, 1))%>%
@@ -997,7 +765,7 @@ print(species_elev_woody_grazing_soil_density_summary_layer4_plot)
 
 
 
-  # Display the bubble plot
+# Display the bubble plot
 #windows()
 #gridExtra::grid.arrange(species_elev_woody_grazing_soil_density_summary_layer1_plot, 
 #             species_elev_woody_grazing_soil_density_summary_layer2_plot,
@@ -1005,3 +773,445 @@ print(species_elev_woody_grazing_soil_density_summary_layer4_plot)
 #             species_elev_woody_grazing_soil_density_summary_layer4_plot,
 #             nrow = 1)
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#srer_crownarea <- read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/species_elev_woody_grazing_soil_crownarea_mean.csv')
+##Elevation, species and soils##
+species_elev_woody_grazing_soil_crownarea_p <- srer_crownarea %>%
+  group_by(layer, MUSYM, species) %>%
+  summarise(grazing_avg = t.test(crownArea[grazing == 0], crownArea[grazing == 1])$p.value)
+
+
+species_elev_woody_grazing_soil_crownarea_mean <- srer_crownarea%>%
+  group_by(MUSYM, species, layer, grazing) %>%
+  summarise(
+    crownArea_mean = weighted.mean(crownArea),
+    crownArea_count = n(),
+    crownArea_sd = sd(crownArea)
+  )
+
+species_elev_woody_grazing_soil_crownarea_summary = species_elev_woody_grazing_soil_crownarea_mean%>% 
+  left_join(species_elev_woody_grazing_soil_crownarea_p, by = c('species', 'layer', 'MUSYM'))
+
+#write.csv(species_elev_woody_grazing_soil_crownarea_summary,"species_elev_woody_grazing_soil_crownarea_summary_082824.csv")
+#write.csv(species_elev_woody_grazing_soil_crownarea_p,"species_elev_woody_grazing_soil_crownarea_summary_082824.csv")
+
+
+
+species_elev_woody_grazing_soil_crownarea_summary_layer1 = species_elev_woody_grazing_soil_crownarea_summary%>% filter(layer==1)
+species_elev_woody_grazing_soil_crownarea_summary_layer2 = species_elev_woody_grazing_soil_crownarea_summary%>% filter(layer==2)
+species_elev_woody_grazing_soil_crownarea_summary_layer3 = species_elev_woody_grazing_soil_crownarea_summary%>% filter(layer==3)
+species_elev_woody_grazing_soil_crownarea_summary_layer4 = species_elev_woody_grazing_soil_crownarea_summary%>% filter(layer==4)
+
+
+
+#windows()
+#grid.arrange(crownarea_layer1_plot, crownarea_layer2_plot,crownarea_layer3_plot,crownarea_layer4_plot, nrow = 2)
+
+
+
+
+
+
+
+
+# Aggregated data
+aggregated_data <- species_elev_woody_grazing_soil_crownarea_summary_layer1 %>%
+  group_by(MUSYM, species, grazing) %>%
+  summarise(crownArea_mean = mean(crownArea_mean), .groups = 'drop')
+
+# Reshape data for radar chart
+reshape_data <- aggregated_data %>%
+  pivot_wider(names_from = species, values_from = crownArea_mean) %>%
+  as.data.frame()
+
+# Set row names to 'MUSYM_grazing'
+rownames(reshape_data) <- paste(reshape_data$MUSYM, reshape_data$grazing, sep = "_")
+reshape_data <- reshape_data %>%
+  dplyr::select(-MUSYM, -grazing)  # Remove grouping columns
+
+# Add row names as a column
+reshape_data <- tibble::rownames_to_column(reshape_data, var = "Group")
+
+
+# Set a fixed maximum value for radar chart scaling
+max_val <- 4.5
+num_vars <- ncol(reshape_data) - 1 # Number of variables
+
+# Add a row with max values for radar chart axis scaling
+radar_data <- rbind(rep(max_val, num_vars), rep(0, num_vars), reshape_data[-1])
+colnames(radar_data) <- colnames(reshape_data)[-1]
+
+# Define axis labels with fewer significant figures
+num_labels <- 5 # Number of axis labels
+axis_labels <- round(seq(0, max_val, length.out = num_labels), 2) # Adjust 2 to the number of decimal places you want
+
+# Define colors and line types
+unique_musym <- unique(reshape_data$Group) # Unique MUSYM and grazing combinations
+num_groups <- length(unique_musym)
+
+# Assign specific colors to MUSYM
+musym_colors <- c("red") # Red, green, blue for MUSYM categories
+musym_levels <- unique(aggregated_data$MUSYM) # Unique MUSYM levels
+names(musym_colors) <- musym_levels
+
+# Assign two line types for grazing
+line_types <- ifelse(grepl("_0$", unique_musym), 1, 2) # Line type 1 for grazing=0, 2 for grazing=1
+
+# Map colors to MUSYM and line types to grazing
+plot_colors <- musym_colors[unlist(lapply(strsplit(unique_musym, "_"), `[`, 1))]
+plot_line_types <- line_types
+
+# Create radar chart
+windows()
+# Radar chart plotting
+radarchart(radar_data, axistype = 1,
+           pcol = plot_colors,            # Colors for each line
+           pfcol = NA,                    # No fill
+           plwd = 2,                      # Increased line width
+           plty = plot_line_types,        # Line types based on grazing
+           cglcol = "grey", 
+           cglty = 1, 
+           vlcex = 1.5,                # Increase size of axis labels
+           calcex = 1.8,
+           palcex = 1.8,
+           caxislabels = axis_labels,
+           title = "Elevation 1",
+           cex.main =3)              # Increase chart title size
+# Create unique legend labels
+legend_labels <- unique_musym
+
+# Add legend with combined MUSYM and grazing labels
+legend("topright", 
+       legend = legend_labels, 
+       col = plot_colors,            # Match colors used in the radar chart
+       lty = plot_line_types,        # Match line types used in the radar chart
+       lwd = 2,                      # Increase legend line width
+       bty = "n", 
+       title = "Legend",
+       cex = 1.5)  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Aggregated data
+aggregated_data <- species_elev_woody_grazing_soil_crownarea_summary_layer2 %>%
+  group_by(MUSYM, species, grazing) %>%
+  summarise(crownArea_mean = mean(crownArea_mean), .groups = 'drop')
+
+# Reshape data for radar chart
+reshape_data <- aggregated_data %>%
+  pivot_wider(names_from = species, values_from = crownArea_mean) %>%
+  as.data.frame()
+
+# Set row names to 'MUSYM_grazing'
+rownames(reshape_data) <- paste(reshape_data$MUSYM, reshape_data$grazing, sep = "_")
+reshape_data <- reshape_data %>%
+  dplyr::select(-MUSYM, -grazing)  # Remove grouping columns
+
+# Add row names as a column
+reshape_data <- tibble::rownames_to_column(reshape_data, var = "Group")
+
+# Set a fixed maximum value for radar chart scaling
+max_val <- 4.5
+num_vars <- ncol(reshape_data) - 1 # Number of variables
+
+# Add a row with max values for radar chart axis scaling
+radar_data <- rbind(rep(max_val, num_vars), rep(0, num_vars), reshape_data[-1])
+colnames(radar_data) <- colnames(reshape_data)[-1]
+
+# Define axis labels with fewer significant figures
+num_labels <- 5 # Number of axis labels
+axis_labels <- round(seq(0, max_val, length.out = num_labels), 2) # Adjust 2 to the number of decimal places you want
+
+# Define colors and line types
+unique_musym <- unique(reshape_data$Group) # Unique MUSYM and grazing combinations
+num_groups <- length(unique_musym)
+
+# Assign specific colors to MUSYM
+musym_colors <- c("green", "red","blue") # Red, green, blue for MUSYM categories
+musym_levels <- unique(aggregated_data$MUSYM) # Unique MUSYM levels
+names(musym_colors) <- musym_levels
+
+# Assign two line types for grazing
+line_types <- ifelse(grepl("_0$", unique_musym), 1, 2) # Line type 1 for grazing=0, 2 for grazing=1
+
+# Map colors to MUSYM and line types to grazing
+plot_colors <- musym_colors[unlist(lapply(strsplit(unique_musym, "_"), `[`, 1))]
+plot_line_types <- line_types
+
+# Create radar chart
+windows()
+
+# Radar chart plotting
+radarchart(radar_data, axistype = 1,
+           pcol = plot_colors,            # Colors for each line
+           pfcol = NA,                    # No fill
+           plwd = 2,                      # Increased line width
+           plty = plot_line_types,        # Line types based on grazing
+           cglcol = "grey", 
+           cglty = 1, 
+           vlcex = 1.5,                # Increase size of axis labels
+           calcex = 1.8,
+           palcex = 1.8,
+           caxislabels = axis_labels,
+           title = "Elevation 2",
+           cex.main =3)              # Increase chart title size            # Increase chart title size
+
+# Create unique legend labels
+legend_labels <- unique_musym
+
+# Add legend with combined MUSYM and grazing labels
+# Add legend with combined MUSYM and grazing labels
+legend("topright", 
+       legend = legend_labels, 
+       col = plot_colors,            # Match colors used in the radar chart
+       lty = plot_line_types,        # Match line types used in the radar chart
+       lwd = 2,                      # Increase legend line width
+       bty = "n", 
+       title = "Legend",
+       cex = 1.1)  
+
+
+
+
+
+
+
+
+
+
+
+
+# Aggregated data
+aggregated_data <- species_elev_woody_grazing_soil_crownarea_summary_layer3 %>%
+  group_by(MUSYM, species, grazing) %>%
+  summarise(crownArea_mean = mean(crownArea_mean), .groups = 'drop')
+
+# Reshape data for radar chart
+reshape_data <- aggregated_data %>%
+  pivot_wider(names_from = species, values_from = crownArea_mean) %>%
+  as.data.frame()
+
+# Set row names to 'MUSYM_grazing'
+rownames(reshape_data) <- paste(reshape_data$MUSYM, reshape_data$grazing, sep = "_")
+reshape_data <- reshape_data %>%
+  dplyr::select(-MUSYM, -grazing)  # Remove grouping columns
+
+# Add row names as a column
+reshape_data <- tibble::rownames_to_column(reshape_data, var = "Group")
+
+# Set a fixed maximum value for radar chart scaling
+max_val <- 4.5
+num_vars <- ncol(reshape_data) - 1 # Number of variables
+
+# Add a row with max values for radar chart axis scaling
+radar_data <- rbind(rep(max_val, num_vars), rep(0, num_vars), reshape_data[-1])
+colnames(radar_data) <- colnames(reshape_data)[-1]
+
+# Define axis labels with fewer significant figures
+num_labels <- 5 # Number of axis labels
+axis_labels <- round(seq(0, max_val, length.out = num_labels), 2) # Adjust 2 to the number of decimal places you want
+
+# Define colors and line types
+unique_musym <- unique(reshape_data$Group) # Unique MUSYM and grazing combinations
+num_groups <- length(unique_musym)
+
+# Assign specific colors to MUSYM
+musym_colors <- c("red", "blue") # Red, green, blue for MUSYM categories
+musym_levels <- unique(aggregated_data$MUSYM) # Unique MUSYM levels
+names(musym_colors) <- musym_levels
+
+# Assign two line types for grazing
+line_types <- ifelse(grepl("_0$", unique_musym), 1, 2) # Line type 1 for grazing=0, 2 for grazing=1
+
+# Map colors to MUSYM and line types to grazing
+plot_colors <- musym_colors[unlist(lapply(strsplit(unique_musym, "_"), `[`, 1))]
+plot_line_types <- line_types
+
+# Create radar chart
+windows()
+
+# Radar chart plotting
+radarchart(radar_data, axistype = 1,
+           pcol = plot_colors,            # Colors for each line
+           pfcol = NA,                    # No fill
+           plwd = 2,                      # Increased line width
+           plty = plot_line_types,        # Line types based on grazing
+           cglcol = "grey", 
+           cglty = 1, 
+           vlcex = 1.5,                # Increase size of axis labels
+           calcex = 1.8,
+           palcex = 1.8,
+           caxislabels = axis_labels,
+           title = "Elevation 3",
+           cex.main =3)              # Increase chart title size
+
+# Create unique legend labels
+legend_labels <- unique_musym
+
+# Add legend with combined MUSYM and grazing labels
+legend("topright", 
+       legend = legend_labels, 
+       col = plot_colors,            # Match colors used in the radar chart
+       lty = plot_line_types,        # Match line types used in the radar chart
+       lwd = 2,                      # Increase legend line width
+       bty = "n", 
+       title = "Legend",
+       cex = 1.5)  
+
+
+
+
+
+
+
+
+
+
+
+# Aggregated data
+aggregated_data <- species_elev_woody_grazing_soil_crownarea_summary_layer4 %>%
+  group_by(MUSYM, species, grazing) %>%
+  summarise(crownArea_mean = mean(crownArea_mean), .groups = 'drop')
+
+# Reshape data for radar chart
+reshape_data <- aggregated_data %>%
+  pivot_wider(names_from = species, values_from = crownArea_mean) %>%
+  as.data.frame()
+
+# Set row names to 'MUSYM_grazing'
+rownames(reshape_data) <- paste(reshape_data$MUSYM, reshape_data$grazing, sep = "_")
+reshape_data <- reshape_data %>%
+  dplyr::select(-MUSYM, -grazing)  # Remove grouping columns
+
+# Add row names as a column
+reshape_data <- tibble::rownames_to_column(reshape_data, var = "Group")
+
+
+# Set a fixed maximum value for radar chart scaling
+max_val <- 4.5
+num_vars <- ncol(reshape_data) - 1 # Number of variables
+
+# Add a row with max values for radar chart axis scaling
+radar_data <- rbind(rep(max_val, num_vars), rep(0, num_vars), reshape_data[-1])
+colnames(radar_data) <- colnames(reshape_data)[-1]
+
+# Define axis labels with fewer significant figures
+num_labels <- 5 # Number of axis labels
+axis_labels <- round(seq(0, max_val, length.out = num_labels), 2) # Adjust 2 to the number of decimal places you want
+
+# Define colors and line types
+unique_musym <- unique(reshape_data$Group) # Unique MUSYM and grazing combinations
+num_groups <- length(unique_musym)
+
+# Assign specific colors to MUSYM
+musym_colors <- c("black", "orange") # Red, green, blue for MUSYM categories
+musym_levels <- unique(aggregated_data$MUSYM) # Unique MUSYM levels
+names(musym_colors) <- musym_levels
+
+# Assign two line types for grazing
+line_types <- ifelse(grepl("_0$", unique_musym), 1, 2) # Line type 1 for grazing=0, 2 for grazing=1
+
+# Map colors to MUSYM and line types to grazing
+plot_colors <- musym_colors[unlist(lapply(strsplit(unique_musym, "_"), `[`, 1))]
+plot_line_types <- line_types
+
+# Create radar chart
+windows()
+
+# Radar chart plotting
+radarchart(radar_data, axistype = 1,
+           pcol = plot_colors,            # Colors for each line
+           pfcol = NA,                    # No fill
+           plwd = 2,                      # Increased line width
+           plty = plot_line_types,        # Line types based on grazing
+           cglcol = "grey", 
+           cglty = 1, 
+           cglwd = 2, 
+           vlcex = 1.5,                # Increase size of axis labels
+           calcex = 1.8,
+           palcex = 1.8,
+           caxislabels = axis_labels,
+           title = "Elevation 4",
+           cex.main =3)              # Increase chart title size
+
+# Create unique legend labels
+legend_labels <- unique_musym
+# Add legend with combined MUSYM and grazing labels
+legend("topright", 
+       legend = legend_labels, 
+       col = plot_colors,            # Match colors used in the radar chart
+       lty = plot_line_types,        # Match line types used in the radar chart
+       lwd = 2,                      # Increase legend line width
+       bty = "n", 
+       title = "Legend",
+       cex = 1.5)  
