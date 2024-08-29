@@ -1,6 +1,6 @@
 #Code written by Cynthia L. Norton, University of Arizona, 2021 
-#The code was used to classify NEON scenes for species specific woody vegetation using LiDAR and Hyperspectral data.
-#Script written by Cynthia Norton
+#code for topoedaphic analysis
+
 #load the raster and rgdal libraries library
 library(patchwork)
 library(ggbreak)
