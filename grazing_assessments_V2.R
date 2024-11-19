@@ -1,0 +1,1723 @@
+#Code written by Cynthia L. Norton, University of Arizona, 2021 
+#code for topoedaphic analysis
+#Script written by Cynthia Norton
+
+Packages <- c('viridis','RANN','fields','VoxR','fmsb','remotes','readxl','spanner',"dplR","dplyr","tidyr", "lidR", 'gridExtra','BSDA','ggbreak','TreeLS',"sf","tibble","ggplot2",'cowplot','patchwork',"tidyverse")
+lapply(Packages, library, character.only = TRUE)
+setwd("//gaea/projects/RaBET/RaBET_landuse/landuse/")
+options(scipen = 100, digits = 4)
+
+
+
+###SRER Percent Cover###
+srer_cover <- read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/srer_landuse_freq_082624.csv') %>% dplyr::select(-freq_NaN)%>% na.omit() 
+srer_mesquite <- srer_cover %>% dplyr::select(-c(cactus,creosote,paloverde,lotebush,bareground,grass)) %>% rename(cover = mesquite) %>% mutate(species="mesquite")%>% na.omit()
+srer_cactus <- srer_cover %>% dplyr::select(-c(mesquite,creosote,paloverde,lotebush,bareground,grass))%>% rename(cover= cactus) %>% mutate(species="cactus")%>% na.omit()
+srer_creosote <- srer_cover %>% dplyr::select(-c(cactus,mesquite,paloverde,lotebush,bareground,grass))%>% rename(cover= creosote) %>% mutate(species="creosote")%>% na.omit()
+srer_lotebush <- srer_cover %>% dplyr::select(-c(cactus,creosote,mesquite, paloverde,bareground,grass))%>% rename(cover= lotebush) %>% mutate(species="lotebush")%>% na.omit()
+srer_paloverde <- srer_cover %>% dplyr::select(-c(cactus,creosote,mesquite,lotebush,bareground,grass))%>% rename(cover= paloverde) %>% mutate(species="paloverde")%>% na.omit()
+srer_bareground <- srer_cover %>% dplyr::select(-c(cactus,creosote,mesquite,paloverde,lotebush,grass))%>% rename(cover= bareground) %>% mutate(species="bareground")%>% na.omit()
+srer_grass <- srer_cover %>% dplyr::select(-c(cactus,creosote,mesquite,lotebush, paloverde,bareground))%>% rename(cover= grass) %>% mutate(species="grass")%>% na.omit()
+
+srer_cover_rbind <- rbind(srer_mesquite,srer_cactus) %>% 
+  rbind(srer_creosote) %>% 
+  rbind(srer_lotebush) %>%
+  rbind(srer_paloverde)%>% mutate(grazing = as.numeric(ifelse(AUY_per_ha >= 300, '1','0')))%>%
+  dplyr::filter(case_when(layer==1 ~ MUSYM == "EbC",
+                          layer==2 ~ MUSYM == "An" |MUSYM =="EbC"|MUSYM =="SoB",
+                          layer==3 ~ MUSYM == "An" |MUSYM == "SoB",
+                          layer==4 ~ MUSYM == "CtB" |MUSYM == "CuC"))
+
+srer_cover_rbind_bg<-rbind(srer_bareground,srer_grass)%>%
+  na.omit()%>%mutate(grazing = as.numeric(ifelse(AUY_per_ha >= 300, '1','0')))%>%
+  dplyr::filter(case_when(layer==1 ~ MUSYM == "EbC",
+                          layer==2 ~ MUSYM == "An" |MUSYM =="EbC"|MUSYM =="SoB",
+                          layer==3 ~ MUSYM == "An" |MUSYM == "SoB",
+                          layer==4 ~ MUSYM == "CtB" |MUSYM == "CuC"))
+
+#write.csv(srer_cover_rbind, 'srer_cover_rbind_082724.csv')%>%
+
+
+
+
+##DENSITY#
+###SRER###
+srer_density <- read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/densities_final_SRER_082624.csv')%>% mutate(grazing = as.numeric(ifelse(AUY_per_ha >= 300, '1','0')))%>%
+  dplyr::filter(case_when(layer==1 ~ MUSYM == "EbC",
+                          layer==2 ~ MUSYM == "An" |MUSYM =="EbC"|MUSYM =="SoB",
+                          layer==3 ~ MUSYM == "An" |MUSYM == "SoB",
+                          layer==4 ~ MUSYM == "CtB" |MUSYM == "CuC"))
+#write.csv(srer_density, 'srer_density_082724.csv')
+
+#srer_density_nograzing <- srer_density %>% filter(grazing == 0)
+#srer_density_grazing <- srer_density %>% filter(grazing == 1)
+
+#srer_density_nograzing_elev1 <- srer_density_nograzing %>% filter(layer == 1)
+#srer_density_nograzing_elev2 <- srer_density_nograzing %>% filter(layer == 2)
+#srer_density_nograzing_elev3 <- srer_density_nograzing %>% filter(layer == 3)
+#srer_density_nograzing_elev4 <- srer_density_nograzing %>% filter(layer == 4)
+
+#srer_density_grazing_elev1 <- srer_density_grazing %>% filter(layer == 1)
+#srer_density_grazing_elev2 <- srer_density_grazing %>% filter(layer == 2)
+#srer_density_grazing_elev3 <- srer_density_grazing %>% filter(layer == 3)
+#srer_density_grazing_elev4 <- srer_density_grazing %>% filter(layer == 4)
+
+
+
+#CROWN AREA#
+##SRER##
+srer_mesquite_crownArea <-read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/mesquite_crownArea_df_srer_082624.csv')%>% mutate(species = "mesquite")
+srer_cactus_crownArea <-read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/cactus_crownArea_df_srer_082624.csv')%>% mutate(species = "cactus")
+srer_creosote_crownArea <-read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/creosote_crownArea_df_srer_082624.csv')%>% mutate(species = "creosote")
+srer_lotebush_crownArea <-read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/lotebush_crownArea_df_srer_082824.csv')%>% mutate(species = "lotebush")
+srer_paloverde_crownArea <-read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/paloverde_crownArea_df_srer_082824.csv')%>% mutate(species = "paloverde")
+
+srer_crownarea <- rbind(srer_mesquite_crownArea,srer_cactus_crownArea,srer_creosote_crownArea,srer_lotebush_crownArea,srer_paloverde_crownArea)%>% 
+  mutate(grazing = as.numeric(ifelse(AUY_per_ha > 300, '1','0')))%>%
+  filter(case_when(FID_elevat==0 ~ MUSYM == "EbC",
+                   FID_elevat==1 ~ MUSYM == "An" |MUSYM =="EbC"|MUSYM =="SoB",
+                   FID_elevat==2 ~ MUSYM == "An" |MUSYM == "SoB",
+                   FID_elevat==3 ~ MUSYM == "CtB" |MUSYM == "CuC"))
+#write.csv(srer_crownarea,'//gaea/projects/RaBET/RaBET_landuse/landuse/srer_crownarea_082724.csv')
+#srer_crownarea_nograzing <- srer_crownarea %>% filter(grazing == 1)
+#srer_crownarea_grazing <- srer_crownarea %>% filter(grazing == 2)
+
+
+#TABLES
+summarize_cover <- function(data, group_vars) {
+  summary_data <- data %>%
+    group_by(across(all_of(group_vars))) %>%
+    summarize(mean = mean(cover),
+              sd = sd(cover),
+              count = n(),
+              se = sd / sqrt(count),
+              upper_limit = mean + se,
+              lower_limit = mean - se,
+              .groups = "drop") %>%
+    mutate(grouping = paste(group_vars, collapse = "_"))
+}
+
+
+summarize_cover_spp <- function(data, group_vars) {
+  summary_data <- data %>%
+    group_by(species,across(all_of(group_vars))) %>%
+    summarize(mean = mean(cover),
+              sd = sd(cover),
+              count = n(),
+              se = sd / sqrt(count),
+              upper_limit = mean + se,
+              lower_limit = mean - se,
+              .groups = "drop") %>%
+    group_by(across(all_of(group_vars)))%>% summarize(mean = sum(mean))%>%
+    mutate(grouping = paste(group_vars, collapse = "_"))
+}
+# Combine crown summaries including both with and without grazing
+cover_summary_all <- bind_rows(
+  # Summaries without grazing
+  summarize_cover(srer_cover_rbind, "species"),
+  summarize_cover(srer_cover_rbind, c("species", "layer")),
+  summarize_cover(srer_cover_rbind, c("MUSYM", "species", "layer"))
+)
+
+# Write the summary to a CSV file
+#write.csv(cover_summary_all, 'cover_summary_all_combinations_110124.csv', row.names = FALSE)
+
+
+
+
+
+
+
+
+
+
+summarize_density <- function(data, group_vars) {
+  summary_data <- data %>%
+    group_by(across(all_of(group_vars))) %>%
+    summarize(mean = mean(density),
+              sd = sd(density),
+              count = n(),
+              se = sd / sqrt(count),
+              upper_limit = mean + se,
+              lower_limit = mean - se,
+              .groups = "drop") %>%
+    mutate(grouping = paste(group_vars, collapse = "_"))
+}
+
+
+summarize_density_spp <- function(data, group_vars) {
+  summary_data <- data %>%
+    group_by(species,across(all_of(group_vars))) %>%
+    summarize(mean = mean(density),
+              sd = sd(density),
+              count = n(),
+              se = sd / sqrt(count),
+              upper_limit = mean + se,
+              lower_limit = mean - se,
+              .groups = "drop") %>%
+    group_by(across(all_of(group_vars)))%>% summarize(mean = sum(mean))%>%
+    mutate(grouping = paste(group_vars, collapse = "_"))
+}
+# Combine crown summaries including both with and without grazing
+density_summary_all <- bind_rows(
+  # Summaries without grazing
+  summarize_cover(srer_cover_rbind, "species"),
+  summarize_cover(srer_cover_rbind, c("species", "layer")),
+  summarize_cover(srer_cover_rbind, c("MUSYM", "species", "layer"))
+)
+
+
+#write.csv(density_summary_all, 'density_summary_all_combinations_110124.csv', row.names = FALSE)
+
+
+
+
+
+
+summarize_crown <- function(data, group_vars) {
+  summary_data <- data %>%
+    group_by(across(all_of(group_vars))) %>%
+    summarize(mean = mean(crownArea),
+              sd = sd(crownArea),
+              count = n(),
+              se = sd / sqrt(count),
+              upper_limit = mean + se,
+              lower_limit = mean - se,
+              .groups = "drop") %>%
+    mutate(grouping = paste(group_vars, collapse = "_"))
+}
+
+
+# Combine crown summaries including both with and without grazing
+crown_summary_all <- bind_rows(
+  # Summaries without grazing
+  summarize_cover(srer_cover_rbind, "species"),
+  summarize_cover(srer_cover_rbind, c("species", "layer")),
+  summarize_cover(srer_cover_rbind, c("MUSYM", "species", "layer"))
+)
+
+#write.csv(crown_summary_all, 'crown_summary_all_combinations_110124.csv', row.names = FALSE)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+###PLOTS
+
+
+###Species###
+#cover
+mean_bareground = weighted.mean(srer_bareground$cover)
+mean_grass = weighted.mean(srer_grass$cover)
+sd_bareground = sd(srer_bareground$cover)
+sd_grass = sd(srer_grass$cover)
+
+species = srer_cover_rbind %>%
+  group_by(species) %>%
+  summarize(mean=mean(cover),  
+            sd=sd(cover),  
+            count=n(),  
+            se=sd/sqrt(count),  
+            upper_limit=mean+se,  
+            lower_limit=mean-se)%>%
+  group_by(species) 
+
+mean_wood = sum(species$mean)
+#write.csv(all, 'grazing_layer_cover_082724.csv')
+
+
+
+
+
+
+grass = srer_cover_rbind_bg %>%
+  group_by(species,layer,grazing) %>%
+  summarize(mean=mean(cover),  
+            sd=sd(cover),  
+            count=n(),  
+            se=sd/sqrt(count),  
+            upper_limit=mean+sd,  
+            lower_limit=mean-sd)
+
+
+all = rbind(species,grass) 
+# create a new dataframe crop_means_Se 
+##write.csv(all, 'all_species_cover_082724.csv')
+
+windows()
+theme_set(theme_gray(base_size = 20, base_family = "") + 
+            theme(
+              axis.title = element_text(face = "bold"),      # Bold axis titles
+              axis.text = element_text(face = "bold",size=20),       # Bold axis text
+              legend.text = element_text(face = "bold"),     # Bold legend text
+              legend.title = element_text(face = "bold"),    # Bold legend title
+              strip.text = element_text(face = "bold")       # Bold facet labels
+            ))
+ggplot(srer_cover_rbind, aes(x=factor(species), y=cover, fill=species))+
+  scale_fill_manual(values=c("gray", "brown",'lightblue','lightgreen','lightpink'))+
+  geom_boxplot(alpha=0.5,
+               size = 1)+
+  theme(legend.position = "none" , axis.text.x = element_text(angle = 90,size=22), axis.text.y = element_text(face = "bold",size=22))+
+  ylab("mean % cover")+  xlab("species")+stat_summary(fun.y="mean",color="red", shape=16, size = 1)+
+  geom_line(aes(y = mean_wood, group = 1), size = 1, color = 'red') 
+
+
+
+
+
+
+
+
+
+#density
+species_density = srer_density %>%
+  group_by(species) %>%
+  summarize(mean=mean(n),  
+            sd=sd(n),  
+            count=n(),  
+            se=sd/sqrt(count),  
+            upper_limit=mean+sd,  
+            lower_limit=mean-sd)
+
+
+
+mean_density = sum(species_density$mean)
+#write.csv(species_density, 'all_species_density_082724.csv')
+
+# #write the summary to a CSV file
+
+
+
+windows()
+# Set theme with bold base elements
+theme_set(theme_gray(base_size = 20, base_family = "") + 
+            theme(
+              axis.title = element_text(face = "bold"),      # Bold axis titles
+              axis.text = element_text(face = "bold",size=20),       # Bold axis text
+              legend.text = element_text(face = "bold"),     # Bold legend text
+              legend.title = element_text(face = "bold"),    # Bold legend title
+              strip.text = element_text(face = "bold")       # Bold facet labels
+            ))
+
+# Create the plot with bold elements
+ggplot(species_density, aes(x = species, y = mean, fill = species)) +
+  scale_fill_manual(values = c("gray", "brown", 'lightblue', 'lightgreen', 'lightpink')) +  
+  theme(
+    legend.position = "none", 
+    axis.text.x = element_text(angle = 90, face = "bold",size=22), # Bold x-axis text
+    axis.text.y = element_text(face = "bold",size=22),             # Bold y-axis text
+    axis.title = element_text(face = "bold")               # Bold axis titles
+  ) +
+  geom_point(shape = 21, size = 6) + 
+  geom_errorbar(aes(ymin = lower_limit, ymax = upper_limit), 
+                width = 0.2, 
+                position = position_dodge(0.01),
+                size = 1.2) +                              # Thicker, bold error bars
+  ylab("mean density per ha")
+
+
+
+#crownarea
+mean_crownarea = mean(srer_crownarea$crownArea)
+sd_crownarea = sd(srer_crownarea$crownArea)
+
+
+species_crownarea = srer_crownarea %>%
+  group_by(species) %>%
+  summarize(crownArea_mean=mean(crownArea),  
+            sd=sd(crownArea),  
+            count=n(),  
+            se=sd/sqrt(count),  
+            upper_limit=crownArea_mean+sd,  
+            lower_limit=crownArea_mean-sd)%>%
+  mutate(w_mean = crownArea_mean)%>%
+  mutate(w_stdev = sd_crownarea)%>%
+  mutate(g_mean = mean_grass)%>%
+  mutate(g_stdev = sd_grass)
+##write.csv(species_crownarea, 'all_species_crownarea_082724.csv')
+
+# create a new dataframe crop_means_Se 
+windows()
+# Set theme with bold base elements
+theme_set(theme_gray(base_size = 20, base_family = "") + 
+            theme(
+              axis.title = element_text(face = "bold"),      # Bold axis titles
+              axis.text = element_text(face = "bold",size=20),       # Bold axis text
+              legend.text = element_text(face = "bold"),     # Bold legend text
+              legend.title = element_text(face = "bold"),    # Bold legend title
+              strip.text = element_text(face = "bold")       # Bold facet labels
+            ))
+# Create the plot
+ggplot(species_crownarea, aes(x = species, y = crownArea_mean, fill=species))+
+  scale_fill_manual(values=c("gray", "brown",'lightblue','lightgreen','lightpink'))+
+  geom_bar(position = "stack", stat = "identity", alpha=0.5) +
+  geom_errorbar(aes(ymin = lower_limit, ymax = upper_limit), 
+                width = 0.2, 
+                position = position_dodge(0.01),
+                size = 1.2) +  
+  geom_line(aes(y = mean_crownarea, group = 1), size = 1, color = 'red')+
+  theme(legend.position = "none" , axis.text.x = element_text(angle = 90,size=22), axis.text.y = element_text(face = "bold",size=22))+
+  ylab("mean crown area m^2")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+###############SUMMARIZING elevation, species, soils, grazing#############
+##Elevation, species and soils##
+species_elev_woody_grazing_soil_cover_p <- srer_cover_rbind %>%
+  group_by(MUSYM, species, layer) %>%
+  summarise(grazing_avg = t.test(cover[grazing==0], cover[grazing==1])$p.value)
+#summarise(n = n())
+
+species_elev_woody_grazing_soil_cover_mean <- srer_cover_rbind %>%
+  group_by(MUSYM, species, layer, grazing) %>%
+  summarise(
+    cover_mean = weighted.mean(cover),
+    cover_count = n(),
+    cover_sd = sd(cover))
+#summarise(n = n())
+species_elev_woody_grazing_soil_cover_summary = species_elev_woody_grazing_soil_cover_mean%>%
+  left_join(species_elev_woody_grazing_soil_cover_p, by = c('species', 'layer', 'MUSYM'))
+
+#write.csv(species_elev_woody_grazing_soil_cover_summary,"species_elev_woody_grazing_soil_cover_summary_082824.csv")
+#write.csv(species_elev_woody_grazing_soil_cover_p,"species_elev_woody_grazing_soil_cover_p_082824.csv")
+
+
+
+
+
+#########SRER SUMMARIZING WITH SOILS PLOTS#########
+cover_layer1 <- species_elev_woody_grazing_soil_cover_summary %>% 
+  mutate(alpha = ifelse(grazing_avg > 0.01, 0.3, 0.8))%>% # Adjust 'significance' column as needed
+  filter(layer==1)%>%
+  mutate(across(everything(), ~ round(., 2))) %>% 
+  filter(MUSYM == "EbC")%>%  
+  mutate(landuse = ifelse(grazing < 1, 'protected','grazing'))%>%
+  mutate(upper_limit=cover_mean+cover_sd)%>%
+  mutate(lower_limit = ifelse(cover_mean - cover_sd < 0, 0, cover_mean - cover_sd))
+
+cover_layer2 <- species_elev_woody_grazing_soil_cover_summary %>%   
+  mutate(alpha = ifelse(grazing_avg > 0.01, 0.3, 0.8))%>% # Adjust 'significance' column as needed
+  filter(layer==2)%>%
+  mutate(across(everything(), ~ round(., 2))) %>% 
+  filter(MUSYM == "An" |MUSYM =="EbC"|MUSYM =="SoB")%>%  
+  mutate(landuse = ifelse(grazing < 1, 'protected','grazing'))%>%
+  mutate(upper_limit=cover_mean+cover_sd)%>%
+  mutate(lower_limit = ifelse(cover_mean - cover_sd < 0, 0, cover_mean - cover_sd))
+
+cover_layer3 <- species_elev_woody_grazing_soil_cover_summary %>% 
+  mutate(alpha = ifelse(grazing_avg > 0.01, 0.3, 0.8))%>% # Adjust 'significance' column as needed
+  filter(layer==3)%>%
+  mutate(across(everything(), ~ round(., 2))) %>% 
+  filter(MUSYM == "An" |MUSYM == "SoB")%>%  
+  mutate(landuse = ifelse(grazing < 1, 'protected','grazing'))%>%
+  mutate(upper_limit=cover_mean+cover_sd)%>%
+  mutate(lower_limit = ifelse(cover_mean - cover_sd < 0, 0, cover_mean - cover_sd))
+
+cover_layer4 <- species_elev_woody_grazing_soil_cover_summary %>% 
+  mutate(alpha = ifelse(grazing_avg > 0.01, 0.3, 0.8))%>% # Adjust 'significance' column as needed
+  filter(layer==4)%>%
+  mutate(across(everything(), ~ round(., 2))) %>% 
+  filter(MUSYM == "CtB" |MUSYM == "CuC")%>%  
+  mutate(landuse = ifelse(grazing < 1, 'protected','grazing'))%>%
+  mutate(upper_limit=cover_mean+cover_sd)%>%
+  mutate(lower_limit = ifelse(cover_mean - cover_sd < 0, 0, cover_mean - cover_sd))
+
+
+
+
+###BARPLOTS COMPARING grazing cover
+cover_layer1_plot<- ggplot(cover_layer1, aes(x = species, y = cover_mean, fill = grazing)) +
+  geom_col(aes(alpha = alpha), position = "identity") + # Map alpha for transparency
+  facet_grid(~ MUSYM) +
+  labs(fill = "Layer 1")+  # Change the legend title
+  theme(legend.position = "outside",
+        axis.text.x = element_text(angle = 90, face = "bold", size = 25),  # Correctly set text appearance
+        axis.text.y=element_text(size=25),
+        axis.title=element_text(size=30,face="bold"))+
+  ylim(0,20)+ ylab("mean % cover")+
+  geom_hline(aes(yintercept = 13.2), color = "blue", linetype = "dashed", size = 1)+ # Add a mean line+ # Add horizontal lines at specific y-intercepts # Add horizontal lines at specific y-intercepts
+  geom_errorbar(aes(ymin = lower_limit, ymax = upper_limit, linetype = as.factor(grazing)),  width = 0.4, position = position_dodge(width = 1),size=1)+
+  scale_alpha_continuous(range = c(0.3, 1)) # Set alpha scale range
+
+
+
+windows()
+# Set theme with bold base elements
+theme_set(theme_gray(base_size = 30, base_family = "") + 
+            theme(
+              axis.title = element_text(face = "bold"),      # Bold axis titles
+              axis.text = element_text(face = "bold"),       # Bold axis text
+              legend.text = element_text(face = "bold"),     # Bold legend text
+              legend.title = element_text(face = "bold"),    # Bold legend title
+              strip.text = element_text(face = "bold")       # Bold facet labels
+            ))
+print(cover_layer1_plot)
+
+cover_layer2_plot<- ggplot(cover_layer2, aes(x = species, y = cover_mean, fill = grazing)) +
+  geom_col(aes(alpha = alpha), position = "identity") + # Map alpha for transparency
+  facet_wrap(~ MUSYM)+
+  labs(fill = "Layer 2")+  # Change the legend title
+  theme(legend.position = "outside",
+        axis.text.x = element_text(angle = 90, face = "bold", size = 25),  # Correctly set text appearance
+        axis.text.y=element_text(size=25),
+        axis.title=element_text(size=30,face="bold"))+
+  ylim(0,20)+  ylab("mean % cover")+
+  geom_hline(aes(yintercept = 15.9), color = "red", linetype = "dashed", size = 1) + # Add horizontal lines at specific y-intercepts
+  geom_hline(aes(yintercept = 13.9), color = "red", linetype = "dashed", size = 1)+  # Add horizontal lines at specific y-intercepts
+  geom_hline(aes(yintercept = 13.7), color = "red", linetype = "dashed", size = 1) +  # Add horizontal lines at specific y-intercepts
+  geom_hline(aes(yintercept = 14.5), color ='blue', linetype = "dashed", size = 1) + # Add horizontal lines at specific y-intercepts # Add horizontal lines at specific y-intercepts
+  geom_errorbar(aes(ymin = lower_limit, ymax = upper_limit, linetype = as.factor(grazing)),  width = 0.4, position = position_dodge(width = 1),size=1)+
+  scale_alpha_continuous(range = c(0.3, 0.8)) # Set alpha scale range
+
+windows()
+theme_set(theme_gray(base_size = 30, base_family = "") + 
+            theme(
+              axis.title = element_text(face = "bold"),      # Bold axis titles
+              axis.text = element_text(face = "bold"),       # Bold axis text
+              legend.text = element_text(face = "bold"),     # Bold legend text
+              legend.title = element_text(face = "bold"),    # Bold legend title
+              strip.text = element_text(face = "bold")       # Bold facet labels
+            ))
+print(cover_layer2_plot)
+
+cover_layer3_plot<- ggplot(cover_layer3, aes(x = species, y = cover_mean, fill = grazing)) +
+  geom_col(aes(alpha = alpha), position = "identity") + # Map alpha for transparency
+  facet_wrap(~ MUSYM)+
+  labs(fill = "Layer 3")+  # Change the legend title
+  theme(legend.position = "outside",
+        axis.text.x = element_text(angle = 90, face = "bold", size = 25),  # Correctly set text appearance
+        axis.text.y=element_text(size=25),
+        axis.title=element_text(size=30,face="bold"))+
+  ylim(0,20)+ylab("mean % cover")+
+  geom_hline(aes(yintercept = 18.6), color = "red", linetype = "dashed", size = 1) + # Add horizontal lines at specific y-intercepts
+  geom_hline(aes(yintercept = 17.8), color = "red", linetype = "dashed", size = 1)+
+  geom_hline(aes(yintercept = 18), color = 'blue', linetype = "dashed", size = 1) + # Add horizontal lines at specific y-intercepts # Add horizontal lines at specific y-intercepts
+  geom_errorbar(aes(ymin = lower_limit, ymax = upper_limit, linetype = as.factor(grazing)),  width = 0.4, position = position_dodge(width = 1),size=1)+
+  scale_alpha_continuous(range = c(0.3, 0.8)) # Set alpha scale range
+windows()
+theme_set(theme_gray(base_size = 30, base_family = "") + 
+            theme(
+              axis.title = element_text(face = "bold"),      # Bold axis titles
+              axis.text = element_text(face = "bold"),       # Bold axis text
+              legend.text = element_text(face = "bold"),     # Bold legend text
+              legend.title = element_text(face = "bold"),    # Bold legend title
+              strip.text = element_text(face = "bold")       # Bold facet labels
+            ))
+print(cover_layer3_plot)
+
+
+cover_layer4_plot<- ggplot(cover_layer4, aes(x = species, y = cover_mean, fill = grazing)) +
+  geom_col(aes(alpha = alpha), position = "identity") + # Map alpha for transparency
+  facet_wrap(~ MUSYM)+
+  labs(fill = "Layer 4")+  # Change the legend title
+  theme(legend.position = "outside",
+        axis.text.x = element_text(angle = 90, face = "bold", size = 25),  # Correctly set text appearance
+        axis.text.y=element_text(size=25),
+        axis.title=element_text(size=30,face="bold"))+
+  ylim(0,43)+ylab("mean % cover")+ # Center and bold the title
+  geom_hline(aes(yintercept = 42.1), color = "red", linetype = "dashed", size = 1) + # Add horizontal lines at specific y-intercepts
+  geom_hline(aes(yintercept = 35.1), color = "red", linetype = "dashed", size = 1)+
+  geom_hline(aes(yintercept = 39.1), color = "blue", linetype = "dashed", size = 1) + # Add horizontal lines at specific y-intercepts # Add horizontal lines at specific y-intercepts
+  geom_errorbar(aes(ymin = lower_limit, ymax = upper_limit, linetype = as.factor(grazing)),  width = 0.4, position = position_dodge(width = 1),size=1)+ scale_y_break(breaks=c(20, 35), scales=c(0.1, 0.1))+
+  scale_alpha_continuous(range = c(0.3, 0.8)) # Set alpha scale range
+
+windows()
+theme_set(theme_gray(base_size = 30, base_family = "") + 
+            theme(
+              axis.title = element_text(face = "bold"),      # Bold axis titles
+              axis.text = element_text(face = "bold"),       # Bold axis text
+              legend.text = element_text(face = "bold"),     # Bold legend text
+              legend.title = element_text(face = "bold"),    # Bold legend title
+              strip.text = element_text(face = "bold")       # Bold facet labels
+            ))
+print(cover_layer4_plot)
+
+
+
+
+#library(gridExtra)
+
+##windows()
+#grid.arrange(cover_layer1_plot, cover_layer2_plot,cover_layer3_plot, nrow = 1)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+##Elevation, species and soils##
+species_elev_woody_grazing_soil_density_p <- srer_density  %>%
+  group_by(layer,MUSYM,species) %>%
+  summarise(grazing_avg = t.test(n[grazing==0], n[grazing==1])$p.value)
+
+species_elev_woody_grazing_soil_density_mean <- srer_density %>%
+  group_by(MUSYM, species, layer, grazing) %>%
+  summarise(
+    density_mean = weighted.mean(n),
+    density_count = n(),
+    density_sd = sd(n)
+  )
+#summarise(n = n())
+species_elev_woody_grazing_soil_density_summary = species_elev_woody_grazing_soil_density_mean%>% 
+  left_join(species_elev_woody_grazing_soil_density_p, by = c('species', 'layer', 'MUSYM'))
+
+#write.csv(species_elev_woody_grazing_soil_density_p,"species_elev_woody_grazing_soil_density_p_082824.csv")
+#write.csv(species_elev_woody_grazing_soil_density_summary,"species_elev_woody_grazing_soil_density_summary_082824.csv")
+
+
+
+
+
+
+species_elev_woody_grazing_soil_density_summary_layer1 = species_elev_woody_grazing_soil_density_summary%>% filter(layer==1)
+species_elev_woody_grazing_soil_density_summary_layer2 = species_elev_woody_grazing_soil_density_summary%>% filter(layer==2)
+species_elev_woody_grazing_soil_density_summary_layer3 = species_elev_woody_grazing_soil_density_summary%>% filter(layer==3)
+species_elev_woody_grazing_soil_density_summary_layer4 = species_elev_woody_grazing_soil_density_summary%>% filter(layer==4)
+
+species_elev_woody_grazing_soil_density_summary_layer1_plot =
+  species_elev_woody_grazing_soil_density_summary_layer1%>%
+  mutate(alpha = ifelse(grazing_avg > 0.01,0.5, 1))%>%
+  ggplot(aes(x = species, y = density_mean)) +
+  geom_line(aes(group = species)) +
+  geom_point(aes(color = grazing, size = density_mean, alpha = alpha)) + # Use alpha for transparency
+  facet_grid(cols = vars(MUSYM), scales = "free") + 
+  scale_size(range = c(1, 15)) + # Adjust the range of points size
+  scale_alpha_continuous(range = c(1)) + # Adjust transparency scale
+  theme(
+    legend.position = "outside",
+    axis.text.x = element_text(angle = 90, face = "bold", size = 25),  # Correctly set text appearance
+    axis.text.y = element_text(size = 25),
+    axis.title.x = element_text(size = 25),
+    axis.title.y = element_text(size = 25)
+  ) +
+  ylim(0, 500)
+
+windows()
+theme_set(theme_gray(base_size = 30, base_family = "") + 
+            theme(
+              axis.title = element_text(face = "bold"),      # Bold axis titles
+              axis.text = element_text(face = "bold"),       # Bold axis text
+              legend.text = element_text(face = "bold"),     # Bold legend text
+              legend.title = element_text(face = "bold"),    # Bold legend title
+              strip.text = element_text(face = "bold")       # Bold facet labels
+            ))
+print(species_elev_woody_grazing_soil_density_summary_layer1_plot)
+
+species_elev_woody_grazing_soil_density_summary_layer2_plot =
+  species_elev_woody_grazing_soil_density_summary_layer2%>%
+  mutate(alpha = ifelse(grazing_avg > 0.01,0.5, 1))%>%
+  ggplot(aes(x = species, y = density_mean)) +
+  geom_line(aes(group = species)) +
+  geom_point(aes(color = grazing, size = density_mean, alpha = alpha)) + # Use alpha for transparency
+  facet_grid(cols = vars(MUSYM), scales = "free") + 
+  scale_size(range = c(1, 15)) + # Adjust the range of points size
+  scale_alpha_continuous(range = c(0.3, 1)) + # Adjust transparency scale
+  theme(
+    legend.position = "outside",
+    axis.text.x = element_text(angle = 90, face = "bold", size = 25),  # Correctly set text appearance
+    axis.text.y = element_text(size = 25),
+    axis.title.x = element_text(size = 25),
+    axis.title.y = element_text(size = 25)
+  ) +
+  ylim(0, 500)
+windows()
+theme_set(theme_gray(base_size = 30, base_family = "") + 
+            theme(
+              axis.title = element_text(face = "bold"),      # Bold axis titles
+              axis.text = element_text(face = "bold"),       # Bold axis text
+              legend.text = element_text(face = "bold"),     # Bold legend text
+              legend.title = element_text(face = "bold"),    # Bold legend title
+              strip.text = element_text(face = "bold")       # Bold facet labels
+            ))
+print(species_elev_woody_grazing_soil_density_summary_layer2_plot)
+
+species_elev_woody_grazing_soil_density_summary_layer3_plot =
+  species_elev_woody_grazing_soil_density_summary_layer3%>%
+  mutate(alpha = ifelse(grazing_avg > 0.01,0.5, 1))%>%
+  ggplot(aes(x = species, y = density_mean)) +
+  geom_line(aes(group = species)) +
+  geom_point(aes(color = grazing, size = density_mean, alpha = alpha)) + # Use alpha for transparency
+  facet_grid(cols = vars(MUSYM), scales = "free") + 
+  scale_size(range = c(1, 15)) + # Adjust the range of points size
+  scale_alpha_continuous(range = c(0.3)) + # Adjust transparency scale
+  theme(
+    legend.position = "outside",
+    axis.text.x = element_text(angle = 90, face = "bold", size = 25),  # Correctly set text appearance
+    axis.text.y = element_text(size = 25),
+    axis.title.x = element_text(size = 25),
+    axis.title.y = element_text(size = 25)
+  ) +
+  ylim(0, 500)
+
+windows()
+theme_set(theme_gray(base_size = 30, base_family = "") + 
+            theme(
+              axis.title = element_text(face = "bold"),      # Bold axis titles
+              axis.text = element_text(face = "bold"),       # Bold axis text
+              legend.text = element_text(face = "bold"),     # Bold legend text
+              legend.title = element_text(face = "bold"),    # Bold legend title
+              strip.text = element_text(face = "bold")       # Bold facet labels
+            ))
+print(species_elev_woody_grazing_soil_density_summary_layer3_plot)
+
+species_elev_woody_grazing_soil_density_summary_layer4_plot =
+  species_elev_woody_grazing_soil_density_summary_layer4%>% 
+  mutate(alpha = ifelse(grazing_avg > 0.01,0.5, 1))%>%
+  ggplot(aes(x = species, y = density_mean)) +
+  geom_line(aes(group = species)) +
+  geom_point(aes(color = grazing, size = density_mean, alpha = alpha)) + # Use alpha for transparency
+  facet_grid(cols = vars(MUSYM), scales = "free") + 
+  scale_size(range = c(1, 15)) + # Adjust the range of points size
+  scale_alpha_continuous(range = c(0.3, 1)) + # Adjust transparency scale
+  theme(
+    legend.position = "outside",
+    axis.text.x = element_text(angle = 90, face = "bold", size = 25),  # Correctly set text appearance
+    axis.text.y = element_text(size = 25),
+    axis.title.x = element_text(size = 25),
+    axis.title.y = element_text(size = 25)
+  ) +
+  ylim(0, 800)
+
+windows()
+theme_set(theme_gray(base_size = 30, base_family = "") + 
+            theme(
+              axis.title = element_text(face = "bold"),      # Bold axis titles
+              axis.text = element_text(face = "bold"),       # Bold axis text
+              legend.text = element_text(face = "bold"),     # Bold legend text
+              legend.title = element_text(face = "bold"),    # Bold legend title
+              strip.text = element_text(face = "bold")       # Bold facet labels
+            ))
+print(species_elev_woody_grazing_soil_density_summary_layer4_plot)
+
+
+
+# Display the bubble plot
+#windows()
+#gridExtra::grid.arrange(species_elev_woody_grazing_soil_density_summary_layer1_plot, 
+#             species_elev_woody_grazing_soil_density_summary_layer2_plot,
+##             species_elev_woody_grazing_soil_density_summary_layer3_plot,
+#             species_elev_woody_grazing_soil_density_summary_layer4_plot,
+#             nrow = 1)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#srer_crownarea <- read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/species_elev_woody_grazing_soil_crownarea_mean.csv')
+##Elevation, species and soils##
+species_elev_woody_grazing_soil_crownarea_p <- srer_crownarea %>%
+  group_by(layer, MUSYM, species) %>%
+  summarise(grazing_avg = t.test(crownArea[grazing == 0], crownArea[grazing == 1])$p.value)
+
+
+species_elev_woody_grazing_soil_crownarea_mean <- srer_crownarea%>%
+  group_by(MUSYM, species, layer, grazing) %>%
+  summarise(
+    crownArea_mean = weighted.mean(crownArea),
+    crownArea_count = n(),
+    crownArea_sd = sd(crownArea)
+  )
+
+species_elev_woody_grazing_soil_crownarea_summary = species_elev_woody_grazing_soil_crownarea_mean%>% 
+  left_join(species_elev_woody_grazing_soil_crownarea_p, by = c('species', 'layer', 'MUSYM'))
+
+#write.csv(species_elev_woody_grazing_soil_crownarea_summary,"species_elev_woody_grazing_soil_crownarea_summary_082824.csv")
+#write.csv(species_elev_woody_grazing_soil_crownarea_p,"species_elev_woody_grazing_soil_crownarea_summary_082824.csv")
+
+
+
+species_elev_woody_grazing_soil_crownarea_summary_layer1 = species_elev_woody_grazing_soil_crownarea_summary%>% filter(layer==1)
+species_elev_woody_grazing_soil_crownarea_summary_layer2 = species_elev_woody_grazing_soil_crownarea_summary%>% filter(layer==2)
+species_elev_woody_grazing_soil_crownarea_summary_layer3 = species_elev_woody_grazing_soil_crownarea_summary%>% filter(layer==3)
+species_elev_woody_grazing_soil_crownarea_summary_layer4 = species_elev_woody_grazing_soil_crownarea_summary%>% filter(layer==4)
+
+
+
+#windows()
+#grid.arrange(crownarea_layer1_plot, crownarea_layer2_plot,crownarea_layer3_plot,crownarea_layer4_plot, nrow = 2)
+
+
+
+
+
+
+
+
+# Aggregated data
+aggregated_data <- species_elev_woody_grazing_soil_crownarea_summary_layer1 %>%
+  group_by(MUSYM, species, grazing) %>%
+  summarise(crownArea_mean = mean(crownArea_mean), .groups = 'drop')
+
+# Reshape data for radar chart
+reshape_data <- aggregated_data %>%
+  pivot_wider(names_from = species, values_from = crownArea_mean) %>%
+  as.data.frame()
+
+# Set row names to 'MUSYM_grazing'
+rownames(reshape_data) <- paste(reshape_data$MUSYM, reshape_data$grazing, sep = "_")
+reshape_data <- reshape_data %>%
+  dplyr::select(-MUSYM, -grazing)  # Remove grouping columns
+
+# Add row names as a column
+reshape_data <- tibble::rownames_to_column(reshape_data, var = "Group")
+
+
+# Set a fixed maximum value for radar chart scaling
+max_val <- 4.5
+num_vars <- ncol(reshape_data) - 1 # Number of variables
+
+# Add a row with max values for radar chart axis scaling
+radar_data <- rbind(rep(max_val, num_vars), rep(0, num_vars), reshape_data[-1])
+colnames(radar_data) <- colnames(reshape_data)[-1]
+
+# Define axis labels with fewer significant figures
+num_labels <- 5 # Number of axis labels
+axis_labels <- round(seq(0, max_val, length.out = num_labels), 2) # Adjust 2 to the number of decimal places you want
+
+# Define colors and line types
+unique_musym <- unique(reshape_data$Group) # Unique MUSYM and grazing combinations
+num_groups <- length(unique_musym)
+
+# Assign specific colors to MUSYM
+musym_colors <- c("red") # Red, green, blue for MUSYM categories
+musym_levels <- unique(aggregated_data$MUSYM) # Unique MUSYM levels
+names(musym_colors) <- musym_levels
+
+# Assign two line types for grazing
+line_types <- ifelse(grepl("_0$", unique_musym), 1, 2) # Line type 1 for grazing=0, 2 for grazing=1
+
+# Map colors to MUSYM and line types to grazing
+plot_colors <- musym_colors[unlist(lapply(strsplit(unique_musym, "_"), `[`, 1))]
+plot_line_types <- line_types
+
+# Create radar chart
+windows()
+
+# Radar chart plotting
+radarchart(radar_data, axistype = 1,
+           pcol = plot_colors,            # Colors for each line
+           pfcol = NA,                    # No fill
+           plwd = 2,                      # Increased line width
+           plty = plot_line_types,        # Line types based on grazing
+           cglcol = "grey", 
+           cglty = 1, 
+           cglwd = 2, 
+           vlcex = 2,                # Increase size of axis labels
+           calcex = 1.8,
+           palcex = 1.8,
+           caxislabels = axis_labels,
+           title = "Elevation 1",
+           cex.main =3)              # Increase chart title size
+
+# Create unique legend labels
+legend_labels <- unique_musym
+# Add legend with combined MUSYM and grazing labels
+legend("topright", 
+       legend = legend_labels, 
+       col = plot_colors,            # Match colors used in the radar chart
+       lty = plot_line_types,        # Match line types used in the radar chart
+       lwd = 2,                      # Increase legend line width
+       bty = "n", 
+       title = "Legend",
+       cex = 1.5)  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Aggregated data
+aggregated_data <- species_elev_woody_grazing_soil_crownarea_summary_layer2 %>%
+  group_by(MUSYM, species, grazing) %>%
+  summarise(crownArea_mean = mean(crownArea_mean), .groups = 'drop')
+
+# Reshape data for radar chart
+reshape_data <- aggregated_data %>%
+  pivot_wider(names_from = species, values_from = crownArea_mean) %>%
+  as.data.frame()
+
+# Set row names to 'MUSYM_grazing'
+rownames(reshape_data) <- paste(reshape_data$MUSYM, reshape_data$grazing, sep = "_")
+reshape_data <- reshape_data %>%
+  dplyr::select(-MUSYM, -grazing)  # Remove grouping columns
+
+# Add row names as a column
+reshape_data <- tibble::rownames_to_column(reshape_data, var = "Group")
+
+# Set a fixed maximum value for radar chart scaling
+max_val <- 4.5
+num_vars <- ncol(reshape_data) - 1 # Number of variables
+
+# Add a row with max values for radar chart axis scaling
+radar_data <- rbind(rep(max_val, num_vars), rep(0, num_vars), reshape_data[-1])
+colnames(radar_data) <- colnames(reshape_data)[-1]
+
+# Define axis labels with fewer significant figures
+num_labels <- 5 # Number of axis labels
+axis_labels <- round(seq(0, max_val, length.out = num_labels), 2) # Adjust 2 to the number of decimal places you want
+
+# Define colors and line types
+unique_musym <- unique(reshape_data$Group) # Unique MUSYM and grazing combinations
+num_groups <- length(unique_musym)
+
+# Assign specific colors to MUSYM
+musym_colors <- c("green", "red","blue") # Red, green, blue for MUSYM categories
+musym_levels <- unique(aggregated_data$MUSYM) # Unique MUSYM levels
+names(musym_colors) <- musym_levels
+
+# Assign two line types for grazing
+line_types <- ifelse(grepl("_0$", unique_musym), 1, 2) # Line type 1 for grazing=0, 2 for grazing=1
+
+# Map colors to MUSYM and line types to grazing
+plot_colors <- musym_colors[unlist(lapply(strsplit(unique_musym, "_"), `[`, 1))]
+plot_line_types <- line_types
+
+# Create radar chart
+windows()
+
+
+# Radar chart plotting
+radarchart(radar_data, axistype = 1,
+           pcol = plot_colors,            # Colors for each line
+           pfcol = NA,                    # No fill
+           plwd = 2,                      # Increased line width
+           plty = plot_line_types,        # Line types based on grazing
+           cglcol = "grey", 
+           cglty = 1, 
+           cglwd = 2, 
+           vlcex = 2,                # Increase size of axis labels
+           calcex = 1.8,
+           palcex = 1.8,
+           caxislabels = axis_labels,
+           title = "Elevation 2",
+           cex.main =3)              # Increase chart title size
+
+# Create unique legend labels
+legend_labels <- unique_musym
+# Add legend with combined MUSYM and grazing labels
+legend("topright", 
+       legend = legend_labels, 
+       col = plot_colors,            # Match colors used in the radar chart
+       lty = plot_line_types,        # Match line types used in the radar chart
+       lwd = 2,                      # Increase legend line width
+       bty = "n", 
+       title = "Legend",
+       cex = 1.5)  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Aggregated data
+aggregated_data <- species_elev_woody_grazing_soil_crownarea_summary_layer3 %>%
+  group_by(MUSYM, species, grazing) %>%
+  summarise(crownArea_mean = mean(crownArea_mean), .groups = 'drop')
+
+# Reshape data for radar chart
+reshape_data <- aggregated_data %>%
+  pivot_wider(names_from = species, values_from = crownArea_mean) %>%
+  as.data.frame()
+
+# Set row names to 'MUSYM_grazing'
+rownames(reshape_data) <- paste(reshape_data$MUSYM, reshape_data$grazing, sep = "_")
+reshape_data <- reshape_data %>%
+  dplyr::select(-MUSYM, -grazing)  # Remove grouping columns
+
+# Add row names as a column
+reshape_data <- tibble::rownames_to_column(reshape_data, var = "Group")
+
+# Set a fixed maximum value for radar chart scaling
+max_val <- 4.5
+num_vars <- ncol(reshape_data) - 1 # Number of variables
+
+# Add a row with max values for radar chart axis scaling
+radar_data <- rbind(rep(max_val, num_vars), rep(0, num_vars), reshape_data[-1])
+colnames(radar_data) <- colnames(reshape_data)[-1]
+
+# Define axis labels with fewer significant figures
+num_labels <- 5 # Number of axis labels
+axis_labels <- round(seq(0, max_val, length.out = num_labels), 2) # Adjust 2 to the number of decimal places you want
+
+# Define colors and line types
+unique_musym <- unique(reshape_data$Group) # Unique MUSYM and grazing combinations
+num_groups <- length(unique_musym)
+
+# Assign specific colors to MUSYM
+musym_colors <- c("green", "blue") # Red, green, blue for MUSYM categories
+musym_levels <- unique(aggregated_data$MUSYM) # Unique MUSYM levels
+names(musym_colors) <- musym_levels
+
+# Assign two line types for grazing
+line_types <- ifelse(grepl("_0$", unique_musym), 1, 2) # Line type 1 for grazing=0, 2 for grazing=1
+
+# Map colors to MUSYM and line types to grazing
+plot_colors <- musym_colors[unlist(lapply(strsplit(unique_musym, "_"), `[`, 1))]
+plot_line_types <- line_types
+
+# Create radar chart
+windows()
+# Radar chart plotting
+radarchart(radar_data, axistype = 1,
+           pcol = plot_colors,            # Colors for each line
+           pfcol = NA,                    # No fill
+           plwd = 2,                      # Increased line width
+           plty = plot_line_types,        # Line types based on grazing
+           cglcol = "grey", 
+           cglty = 1, 
+           cglwd = 2, 
+           vlcex = 2,                # Increase size of axis labels
+           calcex = 1.8,
+           palcex = 1.8,
+           caxislabels = axis_labels,
+           title = "Elevation 3",
+           cex.main =3)              # Increase chart title size
+
+# Create unique legend labels
+legend_labels <- unique_musym
+# Add legend with combined MUSYM and grazing labels
+legend("topright", 
+       legend = legend_labels, 
+       col = plot_colors,            # Match colors used in the radar chart
+       lty = plot_line_types,        # Match line types used in the radar chart
+       lwd = 2,                      # Increase legend line width
+       bty = "n", 
+       title = "Legend",
+       cex = 1.5)  
+
+
+
+
+
+
+
+
+
+
+
+
+# Aggregated data
+aggregated_data <- species_elev_woody_grazing_soil_crownarea_summary_layer4 %>%
+  group_by(MUSYM, species, grazing) %>%
+  summarise(crownArea_mean = mean(crownArea_mean), .groups = 'drop')
+
+# Reshape data for radar chart
+reshape_data <- aggregated_data %>%
+  pivot_wider(names_from = species, values_from = crownArea_mean) %>%
+  as.data.frame()
+
+# Set row names to 'MUSYM_grazing'
+rownames(reshape_data) <- paste(reshape_data$MUSYM, reshape_data$grazing, sep = "_")
+reshape_data <- reshape_data %>%
+  dplyr::select(-MUSYM, -grazing)  # Remove grouping columns
+
+# Add row names as a column
+reshape_data <- tibble::rownames_to_column(reshape_data, var = "Group")
+
+
+# Set a fixed maximum value for radar chart scaling
+max_val <- 4.5
+num_vars <- ncol(reshape_data) - 1 # Number of variables
+
+# Add a row with max values for radar chart axis scaling
+radar_data <- rbind(rep(max_val, num_vars), rep(0, num_vars), reshape_data[-1])
+colnames(radar_data) <- colnames(reshape_data)[-1]
+
+# Define axis labels with fewer significant figures
+num_labels <- 5 # Number of axis labels
+axis_labels <- round(seq(0, max_val, length.out = num_labels), 2) # Adjust 2 to the number of decimal places you want
+
+# Define colors and line types
+unique_musym <- unique(reshape_data$Group) # Unique MUSYM and grazing combinations
+num_groups <- length(unique_musym)
+
+# Assign specific colors to MUSYM
+musym_colors <- c("black", "orange") # Red, green, blue for MUSYM categories
+musym_levels <- unique(aggregated_data$MUSYM) # Unique MUSYM levels
+names(musym_colors) <- musym_levels
+
+# Assign two line types for grazing
+line_types <- ifelse(grepl("_0$", unique_musym), 1, 2) # Line type 1 for grazing=0, 2 for grazing=1
+
+# Map colors to MUSYM and line types to grazing
+plot_colors <- musym_colors[unlist(lapply(strsplit(unique_musym, "_"), `[`, 1))]
+plot_line_types <- line_types
+
+# Create radar chart
+windows()
+
+# Radar chart plotting
+radarchart(radar_data, axistype = 1,
+           pcol = plot_colors,            # Colors for each line
+           pfcol = NA,                    # No fill
+           plwd = 2,                      # Increased line width
+           plty = plot_line_types,        # Line types based on grazing
+           cglcol = "grey", 
+           cglty = 1, 
+           cglwd = 2, 
+           vlcex = 2,                # Increase size of axis labels
+           calcex = 1.8,
+           palcex = 1.8,
+           caxislabels = axis_labels,
+           title = "Elevation 4",
+           cex.main =3)              # Increase chart title size
+
+# Create unique legend labels
+legend_labels <- unique_musym
+# Add legend with combined MUSYM and grazing labels
+legend("topright", 
+       legend = legend_labels, 
+       col = plot_colors,            # Match colors used in the radar chart
+       lty = plot_line_types,        # Match line types used in the radar chart
+       lwd = 2,                      # Increase legend line width
+       bty = "n", 
+       title = "Legend",
+       cex = 1.5)  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#######DATA GRAZING TABLE##########
+
+###############SUMMARIZING elevation, species, soils, grazing#############
+##Elevation, species and soils##
+species_elev_woody_grazing_soil_cover_p <- srer_cover_rbind %>%
+  group_by(MUSYM, species, layer) %>%
+  summarise(grazing_avg = t.test(cover[grazing==0], cover[grazing==1])$p.value)
+#summarise(n = n())
+
+species_elev_woody_grazing_soil_cover_mean <- srer_cover_rbind %>%
+  group_by(MUSYM, species, layer, grazing) %>%
+  summarise(
+    cover_mean = weighted.mean(cover),
+    cover_count = n(),
+    cover_sd = sd(cover))
+#summarise(n = n())
+species_elev_woody_grazing_soil_cover_summary = species_elev_woody_grazing_soil_cover_mean%>%
+  left_join(species_elev_woody_grazing_soil_cover_p, by = c('species', 'layer', 'MUSYM'))
+
+write.csv(species_elev_woody_grazing_soil_cover_summary,"species_elev_woody_grazing_soil_cover_summary_110124.csv")
+write.csv(species_elev_woody_grazing_soil_cover_p,"species_elev_woody_grazing_soil_cover_p_110124.csv")
+
+
+
+
+#srer_crownarea <- read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/species_elev_woody_grazing_soil_crownarea_mean.csv')
+##Elevation, species and soils##
+species_elev_woody_grazing_soil_crownarea_p <- srer_crownarea %>%
+  group_by(layer, MUSYM, species) %>%
+  summarise(grazing_avg = t.test(crownArea[grazing == 0], crownArea[grazing == 1])$p.value)
+
+
+species_elev_woody_grazing_soil_crownarea_mean <- srer_crownarea%>%
+  group_by(MUSYM, species, layer, grazing) %>%
+  summarise(
+    crownArea_mean = weighted.mean(crownArea),
+    crownArea_count = n(),
+    crownArea_sd = sd(crownArea)
+  )
+
+species_elev_woody_grazing_soil_crownarea_summary = species_elev_woody_grazing_soil_crownarea_mean%>% 
+  left_join(species_elev_woody_grazing_soil_crownarea_p, by = c('species', 'layer', 'MUSYM'))
+
+
+write.csv(species_elev_woody_grazing_soil_crownarea_summary,"species_elev_woody_grazing_soil_crownarea_summary_110124.csv")
+write.csv(species_elev_woody_grazing_soil_crownarea_p,"species_elev_woody_grazing_soil_crownarea_p_110124.csv")
+
+
+
+
+##Elevation, species and soils##
+species_elev_woody_grazing_soil_density_p <- srer_density  %>%
+  group_by(layer,MUSYM,species) %>%
+  summarise(grazing_avg = t.test(n[grazing==0], n[grazing==1])$p.value)
+
+species_elev_woody_grazing_soil_density_mean <- srer_density %>%
+  group_by(MUSYM, species, layer, grazing) %>%
+  summarise(
+    density_mean = weighted.mean(n),
+    density_count = n(),
+    density_sd = sd(n)
+  )
+#summarise(n = n())
+species_elev_woody_grazing_soil_density_summary = species_elev_woody_grazing_soil_density_mean%>% 
+  left_join(species_elev_woody_grazing_soil_density_p, by = c('species', 'layer', 'MUSYM'))
+
+
+
+
+write.csv(species_elev_woody_grazing_soil_density_summary,"species_elev_woody_grazing_soil_density_summary_110124.csv")
+write.csv(species_elev_woody_grazing_soil_density_p,"species_elev_woody_grazing_soil_density_p_110124.csv")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+###############SUMMARIZING elevation, species, soils, grazing#############
+##Elevation, species and soils##
+species_elev_woody_grazing_cover_p <- srer_cover_rbind %>%
+  group_by( species, layer) %>%
+  summarise(grazing_avg = t.test(cover[grazing==0], cover[grazing==1])$p.value)
+#summarise(n = n())
+
+species_elev_woody_grazing_cover_mean <- srer_cover_rbind %>%
+  group_by( species, layer, grazing) %>%
+  summarise(
+    cover_mean = weighted.mean(cover),
+    cover_count = n(),
+    cover_sd = sd(cover))
+#summarise(n = n())
+species_elev_woody_grazing_cover_summary = species_elev_woody_grazing_cover_mean%>%
+  left_join(species_elev_woody_grazing_cover_p, by = c('species', 'layer'))
+
+write.csv(species_elev_woody_grazing_cover_summary,"species_elev_woody_grazing_cover_summary_110124.csv")
+write.csv(species_elev_woody_grazing_cover_p,"species_elev_woody_grazing_cover_p_110124.csv")
+
+
+
+
+#srer_crownarea <- read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/species_elev_woody_grazing_crownarea_mean.csv')
+##Elevation, species and soils##
+species_elev_woody_grazing_crownarea_p <- srer_crownarea %>%
+  group_by(layer,  species) %>%
+  summarise(grazing_avg = t.test(crownArea[grazing == 0], crownArea[grazing == 1])$p.value)
+
+
+species_elev_woody_grazing_crownarea_mean <- srer_crownarea%>%
+  group_by( species, layer, grazing) %>%
+  summarise(
+    crownArea_mean = weighted.mean(crownArea),
+    crownArea_count = n(),
+    crownArea_sd = sd(crownArea)
+  )
+
+species_elev_woody_grazing_crownarea_summary = species_elev_woody_grazing_crownarea_mean%>% 
+  left_join(species_elev_woody_grazing_crownarea_p, by = c('species', 'layer'))
+
+
+
+write.csv(species_elev_woody_grazing_crownarea_summary,"species_elev_woody_grazing_crownarea_summary_110124.csv")
+write.csv(species_elev_woody_grazing_crownarea_p,"species_elev_woody_grazing_crownarea_p_110124.csv")
+
+
+
+##Elevation, species and soils##
+species_elev_woody_grazing_density_p <- srer_density  %>%
+  group_by(layer,species) %>%
+  summarise(grazing_avg = t.test(n[grazing==0], n[grazing==1])$p.value)
+
+species_elev_woody_grazing_density_mean <- srer_density %>%
+  group_by( species, layer, grazing) %>%
+  summarise(
+    density_mean = weighted.mean(n),
+    density_count = n(),
+    density_sd = sd(n)
+  )
+#summarise(n = n())
+species_elev_woody_grazing_density_summary = species_elev_woody_grazing_density_mean%>% 
+  left_join(species_elev_woody_grazing_density_p, by = c('species', 'layer'))
+
+
+
+
+write.csv(species_elev_woody_grazing_density_summary,"species_elev_woody_grazing_density_summary_110124.csv")
+write.csv(species_elev_woody_grazing_density_p,"species_elev_woody_grazing_density_p_110124.csv")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+###############SUMMARIZING elevation,  soils, grazing#############
+##Elevation, species and soils##
+elev_woody_grazing_cover_p <- srer_cover_rbind %>%
+  group_by(  layer) %>%
+  summarise(grazing_avg = t.test(cover[grazing==0], cover[grazing==1])$p.value)
+#summarise(n = n())
+
+elev_woody_grazing_cover_mean <- srer_cover_rbind %>%
+  group_by(  layer, grazing) %>%
+  summarise(
+    cover_mean = weighted.mean(cover),
+    cover_count = n(),
+    cover_sd = sd(cover))
+#summarise(n = n())
+elev_woody_grazing_cover_summary = elev_woody_grazing_cover_mean%>%
+  left_join(elev_woody_grazing_cover_p, by = c( 'layer'))
+
+write.csv(elev_woody_grazing_cover_summary,"elev_woody_grazing_cover_summary_110124.csv")
+write.csv(elev_woody_grazing_cover_p,"elev_woody_grazing_cover_p_110124.csv")
+
+
+
+
+#srer_crownarea <- read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/elev_woody_grazing_crownarea_mean.csv')
+##Elevation, species and soils##
+elev_woody_grazing_crownarea_p <- srer_crownarea %>%
+  group_by(layer,  species) %>%
+  summarise(grazing_avg = t.test(crownArea[grazing == 0], crownArea[grazing == 1])$p.value)
+
+
+elev_woody_grazing_crownarea_mean <- srer_crownarea%>%
+  group_by(  layer, grazing) %>%
+  summarise(
+    crownArea_mean = weighted.mean(crownArea),
+    crownArea_count = n(),
+    crownArea_sd = sd(crownArea)
+  )
+
+elev_woody_grazing_crownarea_summary = elev_woody_grazing_crownarea_mean%>% 
+  left_join(elev_woody_grazing_crownarea_p, by = c( 'layer'))
+
+
+write.csv(species_elev_woody_grazing_soil_crownarea_summary,"species_elev_woody_grazing_soil_crownarea_summary_110124.csv")
+write.csv(species_elev_woody_grazing_soil_crownarea_p,"species_elev_woody_grazing_soil_crownarea_p_110124.csv")
+
+
+
+
+##Elevation, species and soils##
+elev_woody_grazing_density_p <- srer_density  %>%
+  group_by(layer,species) %>%
+  summarise(grazing_avg = t.test(n[grazing==0], n[grazing==1])$p.value)
+
+elev_woody_grazing_density_mean <- srer_density %>%
+  group_by(  layer, grazing) %>%
+  summarise(
+    density_mean = weighted.mean(n),
+    density_count = n(),
+    density_sd = sd(n)
+  )
+#summarise(n = n())
+elev_woody_grazing_density_summary = elev_woody_grazing_density_mean%>% 
+  left_join(elev_woody_grazing_density_p, by = c( 'layer'))
+
+
+
+
+write.csv(species_elev_woody_grazing_soil_density_summary,"species_elev_woody_grazing_soil_density_summary_110124.csv")
+write.csv(species_elev_woody_grazing_soil_density_p,"species_elev_woody_grazing_soil_density_p_110124.csv")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+###############SUMMARIZING elevation, species, soils, grazing#############
+##Elevation, species and soils##
+species_woody_grazing_cover_p <- srer_cover_rbind %>%
+  group_by( species, layer) %>%
+  summarise(grazing_avg = t.test(cover[grazing==0], cover[grazing==1])$p.value)
+#summarise(n = n())
+
+species_woody_grazing_cover_mean <- srer_cover_rbind %>%
+  group_by( species,  grazing) %>%
+  summarise(
+    cover_mean = weighted.mean(cover),
+    cover_count = n(),
+    cover_sd = sd(cover))
+#summarise(n = n())
+species_woody_grazing_cover_summary = species_woody_grazing_cover_mean%>%
+  left_join(species_woody_grazing_cover_p, by = c('species'))
+
+write.csv(species_woody_grazing_cover_summary,"species_woody_grazing_cover_summary_110124.csv")
+write.csv(species_woody_grazing_cover_p,"species_woody_grazing_cover_p_110124.csv")
+
+
+
+
+#srer_crownarea <- read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/species_woody_grazing_crownarea_mean.csv')
+##Elevation, species and soils##
+species_woody_grazing_crownarea_p <- srer_crownarea %>%
+  group_by(  species) %>%
+  summarise(grazing_avg = t.test(crownArea[grazing == 0], crownArea[grazing == 1])$p.value)
+
+
+species_woody_grazing_crownarea_mean <- srer_crownarea%>%
+  group_by( species,  grazing) %>%
+  summarise(
+    crownArea_mean = weighted.mean(crownArea),
+    crownArea_count = n(),
+    crownArea_sd = sd(crownArea)
+  )
+
+species_woody_grazing_crownarea_summary = species_woody_grazing_crownarea_mean%>% 
+  left_join(species_woody_grazing_crownarea_p, by = c('species'))
+
+
+
+
+##Elevation, species and soils##
+species_woody_grazing_density_p <- srer_density  %>%
+  group_by(species) %>%
+  summarise(grazing_avg = t.test(n[grazing==0], n[grazing==1])$p.value)
+
+species_woody_grazing_density_mean <- srer_density %>%
+  group_by( species,  grazing) %>%
+  summarise(
+    density_mean = weighted.mean(n),
+    density_count = n(),
+    density_sd = sd(n)
+  )
+#summarise(n = n())
+species_woody_grazing_density_summary = species_woody_grazing_density_mean%>% 
+  left_join(species_woody_grazing_density_p, by = c('species'))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Function to summarize cover data with grazing t-test
+summarize_cover_with_grazing <- function(data, grouping_vars) {
+  # Perform a t-test by grazing for each grouping
+  grazing_test <- data %>%
+    group_by(across(all_of(grouping_vars))) %>%
+    summarise(
+      grazing_p = t.test(cover[grazing == 0], cover[grazing == 1])$p.value,
+      .groups = "drop"
+    )
+  
+  # Calculate cover mean, count, and SD for each grouping and grazing status
+  cover_summary <- data %>%
+    group_by(across(all_of(grouping_vars)), grazing) %>%
+    summarise(
+      cover_mean = weighted.mean(cover, na.rm = TRUE),
+      cover_count = n(),
+      cover_sd = sd(cover, na.rm = TRUE),
+      .groups = "drop"
+    )
+  
+  # Combine the cover summary with grazing t-test results
+  cover_summary %>%
+    left_join(grazing_test, by = grouping_vars)
+}
+
+# Combine summaries for each grouping combination with grazing t-test
+cover_grazing_summary_all <- bind_rows(
+  summarize_cover_with_grazing(srer_cover_rbind, "species"),
+  summarize_cover_with_grazing(srer_cover_rbind, c("species", "layer")),
+  summarize_cover_with_grazing(srer_cover_rbind, c("MUSYM", "species", "layer"))
+)
+
+
+
+write.csv(cover_grazing_summary_all,"cover_grazing_summary_all_110124.csv")
+
+
+
+
+
+
+
+
+
+
+
+
+# Function to summarize density data with grazing t-test
+summarize_density_with_grazing <- function(data, grouping_vars) {
+  # Perform a t-test by grazing for each grouping
+  grazing_test <- data %>%
+    group_by(across(all_of(grouping_vars))) %>%
+    summarise(
+      grazing_p = t.test(density[grazing == 0], density[grazing == 1])$p.value,
+      .groups = "drop"
+    )
+  
+  # Calculate density mean, count, and SD for each grouping and grazing status
+  density_summary <- data %>%
+    group_by(across(all_of(grouping_vars)), grazing) %>%
+    summarise(
+      density_mean = weighted.mean(density, na.rm = TRUE),
+      density_count = n(),
+      density_sd = sd(density, na.rm = TRUE),
+      .groups = "drop"
+    )
+  
+  # Combine the density summary with grazing t-test results
+  density_summary %>%
+    left_join(grazing_test, by = grouping_vars)
+}
+
+# Combine summaries for each grouping combination with grazing t-test
+density_grazing_summary_all <- bind_rows(
+  summarize_density_with_grazing(srer_density, "species"),
+  summarize_density_with_grazing(srer_density, c("species", "layer")),
+  summarize_density_with_grazing(srer_density, c("MUSYM", "species", "layer"))
+)
+
+
+
+
+
+write.csv(density_grazing_summary_all,"density_grazing_summary_all_110124.csv")
+
+
+
+
+
+# Function to summarize crownarea data with grazing t-test
+summarize_crownarea_with_grazing <- function(data, grouping_vars) {
+  # Perform a t-test by grazing for each grouping
+  grazing_test <- data %>%
+    group_by(across(all_of(grouping_vars))) %>%
+    summarise(
+      grazing_p = t.test(crownArea[grazing == 0], crownArea[grazing == 1])$p.value,
+      .groups = "drop"
+    )
+  
+  # Calculate crownarea mean, count, and SD for each grouping and grazing status
+  crownarea_summary <- data %>%
+    group_by(across(all_of(grouping_vars)), grazing) %>%
+    summarise(
+      crownarea_mean = weighted.mean(crownArea, na.rm = TRUE),
+      crownarea_count = n(),
+      crownarea_sd = sd(crownArea, na.rm = TRUE),
+      .groups = "drop"
+    )
+  
+  # Combine the crownarea summary with grazing t-test results
+  crownarea_summary %>%
+    left_join(grazing_test, by = grouping_vars)
+}
+
+# Combine summaries for each grouping combination with grazing t-test
+crownarea_grazing_summary_all <- bind_rows(
+  summarize_crownarea_with_grazing(srer_crownarea, "species"),
+  summarize_crownarea_with_grazing(srer_crownarea, c("species", "layer")),
+  summarize_crownarea_with_grazing(srer_crownarea, c("MUSYM", "species", "layer"))
+)
+
+
+write.csv(crownarea_grazing_summary_all,"crownarea_grazing_summary_all_110124.csv")

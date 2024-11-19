@@ -1,0 +1,1912 @@
+#Code written by Cynthia L. Norton, University of Arizona, 2021 
+#The code was used to classify NEON scenes for species specific woody vegetation using LiDAR and Hyperspectral data.
+#Script written by Cynthia Norton
+#load the raster and rgdal libraries library
+library(patchwork)
+library(ggplot2)
+library(ggbreak)
+library(raster)
+library(ggplot2)
+library(ggridges)
+library(ggdist)
+library(dplyr)
+library(rgdal)
+library(dplyr)
+library(exactextractr)
+library(sf)
+library(tidyr)
+library(terra)
+library(tibble)
+library(reshape2)
+library(ggplot2)
+library(ExtractTrainData)
+library(rLiDAR)
+library(tidyverse)
+library(lidR)
+library(doParallel)
+library(raster)
+library(foreach)
+library(broom)
+library(dplyr)
+library(purrr)
+library(ggplot2)
+library(hrbrthemes)
+library(dplyr)
+library(tidyr)
+library(viridis)
+library(gridExtra)
+library(BSDA)
+library("ForestTools")
+#install.packages('BSDA')
+####DESNITY####
+setwd("//gaea/projects/RaBET/RaBET_landuse/landuse/")
+options(scipen = 100, digits = 4)
+
+
+
+###SRER Percent Cover###
+srer_cover <- read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/srer_species_freq_080823_cleaned.csv')
+srer_mesquite <- srer_cover %>% select(-c(cactus,creosote,paloverde,lotebush,bareground,grass)) %>% rename(cover = mesquite) %>% mutate(species="mesquite")
+srer_cactus <- srer_cover %>% select(-c(mesquite,creosote,paloverde,lotebush,bareground,grass))%>% rename(cover= cactus) %>% mutate(species="cactus")
+srer_creosote <- srer_cover %>% select(-c(cactus,mesquite,paloverde,lotebush,bareground,grass))%>% rename(cover= creosote) %>% mutate(species="creosote")
+srer_paloverde <- srer_cover %>% select(-c(cactus,creosote,mesquite,lotebush,bareground,grass))%>% rename(cover= paloverde) %>% mutate(species="paloverde")
+srer_lotebush <- srer_cover %>% select(-c(cactus,creosote,mesquite, paloverde,bareground,grass))%>% rename(cover= lotebush) %>% mutate(species="lotebush")
+srer_bareground <- srer_cover %>% select(-c(cactus,creosote,mesquite,paloverde,lotebush,grass))%>% rename(cover= bareground) %>% mutate(species="bareground")
+srer_grass <- srer_cover %>% select(-c(cactus,creosote,mesquite,lotebush, paloverde,bareground))%>% rename(cover= grass) %>% mutate(species="grass")
+
+srer_cover_rbind <- rbind(srer_mesquite,srer_cactus) %>% 
+  rbind(srer_creosote) %>% 
+  rbind(srer_paloverde) %>%
+  rbind(srer_lotebush)
+
+srer_cover_rbind_bg<-rbind(srer_bareground,srer_grass)
+#write.csv(srer_cover_rbind, 'srer_cover_rbind_110923.csv')
+
+
+
+#DENSITY#
+###SRER###
+srer_density <- read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/count_final_srer_083123.csv') %>% 
+  na.omit() %>%
+  filter(case_when(layer==1 ~ MUSYM == "EbC",
+                   layer==2 ~ MUSYM == "An" |MUSYM =="EbC"|MUSYM =="SoB",
+                   layer==3 ~ MUSYM == "An" |MUSYM == "SoB",
+                   layer==4 ~ MUSYM == "CtB" |MUSYM == "CuC"))
+#write.csv(srer_density, 'srer_density_110923.csv')
+
+#srer_density_nograzing <- srer_density %>% filter(grazing == 0)
+#srer_density_grazing <- srer_density %>% filter(grazing == 1)
+
+#srer_density_nograzing_elev1 <- srer_density_nograzing %>% filter(layer == 1)
+#srer_density_nograzing_elev2 <- srer_density_nograzing %>% filter(layer == 2)
+#srer_density_nograzing_elev3 <- srer_density_nograzing %>% filter(layer == 3)
+#srer_density_nograzing_elev4 <- srer_density_nograzing %>% filter(layer == 4)
+
+#srer_density_grazing_elev1 <- srer_density_grazing %>% filter(layer == 1)
+#srer_density_grazing_elev2 <- srer_density_grazing %>% filter(layer == 2)
+#srer_density_grazing_elev3 <- srer_density_grazing %>% filter(layer == 3)
+#srer_density_grazing_elev4 <- srer_density_grazing %>% filter(layer == 4)
+
+
+
+#CROWN AREA#
+##SRER##
+srer_mesquite <-read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/mesquite_crownArea_srer_df_090123.csv')%>% mutate(species = "mesquite")
+srer_cactus <-read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/cactus_crownArea_srer_df_090123.csv')%>% mutate(species = "cactus")
+srer_creosote <-read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/creosote_crownArea_srer_df_090123.csv')%>% mutate(species = "creosote")
+srer_lotebush <-read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/lotebush_crownArea_srer_df_090123.csv')%>% mutate(species = "lotebush")
+srer_paloverde <-read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/paloverde_crownArea_srer_df_090123.csv')%>% mutate(species = "paloverde")
+
+srer_crownarea <- rbind(srer_mesquite,srer_cactus,srer_creosote,srer_lotebush,srer_paloverde)%>% 
+  na.omit()%>%
+  filter(case_when(FID_elevat==0 ~ MUSYM == "EbC",
+                   FID_elevat==1 ~ MUSYM == "An" |MUSYM =="EbC"|MUSYM =="SoB",
+                   FID_elevat==2 ~ MUSYM == "An" |MUSYM == "SoB",
+                   FID_elevat==3 ~ MUSYM == "CtB" |MUSYM == "CuC"))
+#write.csv(srer_crownarea,'//gaea/projects/RaBET/RaBET_landuse/landuse/srer_crownarea.csv')
+#srer_crownarea_nograzing <- srer_crownarea %>% filter(grazing == 1)
+#srer_crownarea_grazing <- srer_crownarea %>% filter(grazing == 2)
+
+
+
+
+###Species###
+#cover
+mean_bareground = weighted.mean(srer_bareground$cover)
+mean_grass = weighted.mean(srer_grass$cover)
+sd_bareground = sd(srer_bareground$cover)
+sd_grass = sd(srer_grass$cover)
+
+species = srer_cover_rbind %>%
+  group_by(species) %>%
+  summarize(mean=mean(cover),  
+            sd=sd(cover),  
+            count=n(),  
+            se=sd/sqrt(count),  
+            upper_limit=mean+se,  
+            lower_limit=mean-se)
+mean_wood = sum(species$mean)
+
+grass = srer_cover_rbind_bg %>%
+  group_by(species) %>%
+  summarize(mean=mean(cover),  
+            sd=sd(cover),  
+            count=n(),  
+            se=sd/sqrt(count),  
+            upper_limit=mean+se,  
+            lower_limit=mean-se)
+
+all = rbind(species,grass) 
+# create a new dataframe crop_means_Se 
+#write.csv(all, 'all_species_cover_110923.csv')
+
+windows()
+ggplot(srer_cover_rbind, aes(x=factor(species), y=cover, fill=species))+
+  scale_fill_manual(values=c("gray", "brown",'lightblue','lightgreen','lightpink'))+
+  geom_boxplot(alpha=0.5)+
+  theme( legend.position = "none" )+
+  ylab("mean % cover")+stat_summary(fun.y="mean",color="red", shape=4)+
+  geom_line(aes(y = mean_wood, group = 1), size = 1, color = 'red') 
+
+
+
+
+
+
+
+
+
+#density
+species_density = srer_density %>%
+  group_by(species) %>%
+  summarize(mean=mean(n),  
+            sd=sd(n),  
+            count=n(),  
+            se=sd/sqrt(count),  
+            upper_limit=mean+se,  
+            lower_limit=mean-se)
+
+mean_density = sum(species_density$mean)
+#write.csv(species_density, 'all_species_density_110923.csv')
+
+
+# create a new dataframe crop_means_Se 
+windows()
+theme_set(theme_gray(base_size = 20))
+ggplot(species_density, aes(x=species, y=mean, fill=species))+
+  scale_fill_manual(values=c("gray", "brown",'lightblue','lightgreen','lightpink')) +  
+  geom_point(shape=21, size= 3)+ 
+  geom_errorbar(aes(ymin=lower_limit, ymax=upper_limit), width=.2, 
+                position=position_dodge(0.01))+
+  ylab("mean density per ha")
+
+
+
+
+
+
+#crownarea
+mean_crownarea = mean(srer_crownarea$crownArea)
+sd_crownarea = sd(srer_crownarea$crownArea)
+
+
+species_crownarea = srer_crownarea %>%
+  group_by(species) %>%
+  summarize(mean=mean(crownArea),  
+            sd=sd(crownArea),  
+            count=n(),  
+            se=sd/sqrt(count),  
+            upper_limit=mean+se,  
+            lower_limit=mean-se)%>%
+  mutate(w_mean = mean_crownarea)%>%
+  mutate(w_stdev = sd_crownarea)%>%
+  mutate(g_mean = mean_grass)%>%
+  mutate(g_stdev = sd_grass)
+#write.csv(species_crownarea, 'all_species_crownarea_110923.csv')
+
+
+# create a new dataframe crop_means_Se 
+windows()
+theme_set(theme_gray(base_size = 20))
+# Create the plot
+ggplot(species_crownarea, aes(x = species, y = mean, fill=species))+
+  scale_fill_manual(values=c("gray", "brown",'lightblue','lightgreen','lightpink'))+
+  geom_bar(position = "stack", stat = "identity", alpha=0.5) +
+  geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd), width=.2, 
+                position=position_dodge(0.05))+
+  geom_line(aes(y = mean_crownarea, group = 1), size = 1, color = 'red')+
+  ylab("mean crown area m^2")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+####summarizing elevation and soils####
+#LAYER
+elev_woody_cover_summary <- srer_cover_rbind %>%
+  group_by(layer,species) %>%
+  summarise(
+    cover_mean = weighted.mean(cover),
+    cover_count = n(),
+    cover_sd = sd(cover))%>%group_by(layer)%>% summarise(across(cover_mean, ~ sum(., na.rm = TRUE)))
+#summarise(n = n())
+#write.csv(elev_woody_cover_summary,"elev_woody_cover_summary_110923.csv")
+
+soils_elev_woody_cover_summary <- srer_cover_rbind %>%
+  group_by(layer,species,MUSYM) %>%
+  summarise(
+    cover_mean = weighted.mean(cover),
+    cover_count = n(),
+    cover_sd = sd(cover))%>%group_by(layer,MUSYM)%>% summarise(across(cover_mean, ~ sum(., na.rm = TRUE)))
+#write.csv(soils_elev_woody_cover_summary,"soils_elev_woody_summary_110923.csv")
+
+##density
+elev_woody_density_summary <- srer_density %>%
+  group_by(layer,species) %>%
+  summarise(
+    density_mean = weighted.mean(n),
+    density_count = n(),
+    density_sd = sd(n))%>%group_by(layer)%>% summarise(across(density_mean, ~ sum(., na.rm = TRUE)))
+#summarise(n = n())
+#write.csv(elev_woody_density_summary,"elev_woody_density_summary_110923.csv")
+
+#SOILS
+soils_elev_woody_density_summary <- srer_density%>%
+  group_by(layer,species,MUSYM) %>%
+  summarise(
+    density_mean = weighted.mean(n),
+    density_count = n(),
+    density_sd = sd(n))%>%group_by(layer,MUSYM)%>% summarise(across(density_mean, ~ sum(., na.rm = TRUE)))
+#write.csv(soils_elev_woody_density_summary,"soils_elev_woody_density_summary_110923.csv")
+
+##crownarea
+elev_woody_crownArea_summary <- srer_crownarea %>%
+  group_by(layer,species) %>%
+  summarise(
+    crownArea_mean = weighted.mean(crownArea),
+    crownArea_count = n(),
+    crownArea_sd = sd(crownArea))%>%group_by(layer)%>% summarise(across(crownArea_mean, ~ mean(., na.rm = TRUE)))
+#summarise(n = n())
+#write.csv(elev_woody_crownArea_summary,"elev_woody_crownArea_summary_110923.csv")
+
+soils_elev_woody_crownArea_summary <- srer_crownarea%>%
+  group_by(layer,species,MUSYM) %>%
+  summarise(
+    crownArea_mean = weighted.mean(crownArea),
+    crownArea_count = n(),
+    crownArea_sd = sd(crownArea))%>%group_by(layer,MUSYM)%>% summarise(across(crownArea_mean, ~ mean(., na.rm = TRUE)))
+#write.csv(soils_elev_woody_crownArea_summary,"soils_elev_woody_crownArea_summary_110923.csv")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+####summarizing elevation, species and soils####
+#LAYER
+elev_woody_species_cover_summary <- srer_cover_rbind %>%
+  group_by(layer,species) %>%
+  summarise(
+    cover_mean = weighted.mean(cover),
+    cover_count = n(),
+    cover_sd = sd(cover))%>%group_by(layer,species)%>% summarise(across(cover_mean, ~ sum(., na.rm = TRUE)))
+#summarise(n = n())
+write.csv(elev_woody_species_cover_summary,"elev_woody_species_cover_species_summary_110923.csv")
+
+soils_elev_woody_species_cover_summary <- srer_cover_rbind %>%
+  group_by(layer,species,MUSYM) %>%
+  summarise(
+    cover_mean = weighted.mean(cover),
+    cover_count = n(),
+    cover_sd = sd(cover))%>%group_by(layer,MUSYM,species)%>% summarise(across(cover_mean, ~ sum(., na.rm = TRUE)))
+write.csv(soils_elev_woody_species_cover_summary,"soils_elev_woody_species_summary_110923.csv")
+
+##density
+elev_woody_species_density_summary <- srer_density %>%
+  group_by(layer,species) %>%
+  summarise(
+    density_mean = weighted.mean(n),
+    density_count = n(),
+    density_sd = sd(n))%>%group_by(layer,species)%>% summarise(across(density_mean, ~ sum(., na.rm = TRUE)))
+#summarise(n = n())
+write.csv(elev_woody_species_density_summary,"elev_woody_species_density_summary_110923.csv")
+
+#SOILS
+soils_elev_woody_species_density_summary <- srer_density%>%
+  group_by(layer,species,MUSYM) %>%
+  summarise(
+    density_mean = weighted.mean(n),
+    density_count = n(),
+    density_sd = sd(n))%>%group_by(layer,MUSYM,species)%>% summarise(across(density_mean, ~ sum(., na.rm = TRUE)))
+write.csv(soils_elev_woody_species_density_summary,"soils_elev_woody_species_density_summary_110923.csv")
+
+##crownarea
+elev_woody_species_crownArea_summary <- srer_crownarea %>%
+  group_by(layer,species) %>%
+  summarise(
+    crownArea_mean = weighted.mean(crownArea),
+    crownArea_count = n(),
+    crownArea_sd = sd(crownArea))%>%group_by(layer,species)%>% summarise(across(crownArea_mean, ~ mean(., na.rm = TRUE)))
+#summarise(n = n())
+write.csv(elev_woody_species_crownArea_summary,"elev_woody_species_crownArea_summary_110923.csv")
+
+soils_elev_woody_species_crownArea_summary <- srer_crownarea%>%
+  group_by(layer,species,MUSYM) %>%
+  summarise(
+    crownArea_mean = weighted.mean(crownArea),
+    crownArea_count = n(),
+    crownArea_sd = sd(crownArea))%>%group_by(layer,MUSYM,species)%>% summarise(across(crownArea_mean, ~ mean(., na.rm = TRUE)))
+write.csv(soils_elev_woody_species_crownArea_summary,"soils_elev_woody_species_crownArea_summary_110923.csv")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+###############SUMMARIZING elevation, soils, grazing#############
+##Elevation##
+elev_woody_grazing_cover_p <- srer_cover_rbind %>%
+  group_by(layer,FID_srer_g,grazing) %>%
+  summarise(
+    cover_sum = sum(cover),
+    cover_count = n(),
+    cover_sd = sd(cover))%>%
+   group_by(layer)%>%
+   summarise(grazing_avg = t.test(cover_sum[grazing==0], cover_sum[grazing==1])$p.value)
+#summarise(n = n())
+
+elev_woody_grazing_cover_mean <- srer_cover_rbind %>%
+  group_by(layer,FID_srer_g,grazing) %>%
+  summarise(
+    cover_sum = sum(cover),
+    cover_count = n(),
+    cover_sd = sd(cover))%>%
+  group_by(layer,grazing)%>%
+  summarise(
+    cover_mean = weighted.mean(cover_sum),
+    cover_count = n(),
+    cover_sd = sd(cover_sum))
+#summarise(n = n())
+elev_woody_grazing_cover_summary = elev_woody_grazing_cover_mean%>% 
+  left_join(elev_woody_grazing_cover_p, by = c( 'layer'))%>%filter(grazing_avg < 0.05)
+
+write.csv(elev_woody_grazing_cover_summary,"elev_woody_grazing_cover_summary_110923.csv")
+#write.csv(elev_woody_grazing_cover_p,"elev_woody_grazing_cover_p_110923.csv")
+
+
+elev_woody_grazing_density_p <- srer_density %>%
+  group_by(layer,FID_srer_g,grazing) %>%
+  summarise(
+    density_mean = sum(n),
+    density_count = n(),
+    density_sd = sd(n))%>%
+  group_by(layer)%>%
+  summarise(grazing_avg = t.test(density_mean[grazing==0], density_mean[grazing==1])$p.value)
+#summarise(n = n())
+
+elev_woody_grazing_density_mean <- srer_density %>%
+  group_by(layer,FID_srer_g,grazing) %>%
+  summarise(
+    density_sum = sum(n),
+    density_count = n(),
+    density_sd = sd(n))%>%
+  group_by(layer,grazing)%>%
+  summarise(
+    density_mean = weighted.mean(density_sum),
+    density_count = n(),
+    density_sd = sd(density_sum))
+#summarise(n = n())
+elev_woody_grazing_density_summary = elev_woody_grazing_density_mean%>% 
+  left_join(elev_woody_grazing_density_p, by = c( 'layer'))%>%filter(grazing_avg < 0.05)
+
+#write.csv(elev_woody_grazing_density_p,"elev_woody_grazing_density_p_110923.csv")
+write.csv(elev_woody_grazing_density_summary,"elev_woody_grazing_density_summary_110923.csv")
+
+#srer_crownarea <- read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/elev_woody_grazing_crownarea_mean.csv')
+
+
+elev_woody_grazing_crownarea_p <- srer_crownarea %>%
+  group_by(layer,FID_srer_g,grazing) %>%
+  summarise(
+    crownarea_mean = weighted.mean(crownArea),
+    crownarea_count = n(),
+    crownarea_sd = sd(crownArea))%>%
+  group_by(layer)%>%
+  summarise(grazing_avg = t.test(crownarea_mean[grazing==1], crownarea_mean[grazing==2])$p.value)
+#summarise(n = n())
+
+elev_woody_grazing_crownarea_mean <- srer_crownarea %>%
+  group_by(layer,FID_srer_g,grazing) %>%
+  summarise(
+    crownarea_sum = weighted.mean(crownArea),
+    crownarea_count = n(),
+    crownarea_sd = sd(crownArea))%>%
+  group_by(layer,grazing)%>%
+  summarise(
+    crownarea_mean = weighted.mean(crownarea_sum),
+    crownarea_count = n(),
+    crownarea_sd = sd(crownarea_sum))
+#summarise(n = n())
+elev_woody_grazing_crownarea_summary = elev_woody_grazing_crownarea_mean%>% 
+  left_join(elev_woody_grazing_crownarea_p, by = c( 'layer'))%>%filter(grazing_avg < 0.05)
+
+write.csv(elev_woody_grazing_crownarea_summary,"elev_woody_grazing_crownarea_summary_110923.csv")
+#write.csv(elev_woody_grazing_crownarea_p,"elev_woody_grazing_crownarea_summary_p_110923.csv")
+
+##SOILS##
+soils_elev_woody_grazing_cover_p <- srer_cover_rbind %>%
+  group_by(layer,FID_srer_g,grazing, MUSYM) %>%
+  summarise(
+    cover_sum = sum(cover),
+    cover_count = n(),
+    cover_sd = sd(cover))%>%
+  group_by(layer,MUSYM)%>%
+  summarise(grazing_avg = t.test(cover_sum[grazing==0], cover_sum[grazing==1])$p.value)
+#summarise(n = n())
+
+soils_elev_woody_grazing_cover_mean <- srer_cover_rbind %>%
+  group_by(layer,FID_srer_g,grazing,MUSYM) %>%
+  summarise(
+    cover_sum = sum(cover),
+    cover_count = n(),
+    cover_sd = sd(cover))%>%
+  group_by(layer,grazing,MUSYM)%>%
+  summarise(
+    cover_mean = weighted.mean(cover_sum),
+    cover_count = n(),
+    cover_sd = sd(cover_sum))
+#summarise(n = n())
+soils_elev_woody_grazing_cover_summary = soils_elev_woody_grazing_cover_mean%>% 
+  left_join(soils_elev_woody_grazing_cover_p, by = c( 'layer','MUSYM'))%>%filter(grazing_avg < 0.05)
+
+write.csv(soils_elev_woody_grazing_cover_summary,"soils_elev_woody_grazing_cover_summary_110923.csv")
+#write.csv(soils_elev_woody_grazing_cover_p,"soils_elev_woody_grazing_cover_p_090123.csv")
+
+
+soils_elev_woody_grazing_density_p <- srer_density %>%
+  group_by(layer,FID_srer_g,grazing,MUSYM) %>%
+  summarise(
+    density_mean = sum(n),
+    density_count = n(),
+    density_sd = sd(n))%>%
+  group_by(layer,MUSYM)%>%
+  summarise(grazing_avg = t.test(density_mean[grazing==0], density_mean[grazing==1])$p.value)
+#summarise(n = n())
+
+soils_elev_woody_grazing_density_mean <- srer_density %>%
+  group_by(layer,FID_srer_g,grazing,MUSYM) %>%
+  summarise(
+    density_sum = sum(n),
+    density_count = n(),
+    density_sd = sd(n))%>%
+  group_by(layer,grazing,MUSYM)%>%
+  summarise(
+    density_mean = weighted.mean(density_sum),
+    density_count = n(),
+    density_sd = sd(density_sum))
+#summarise(n = n())
+soils_elev_woody_grazing_density_summary = soils_elev_woody_grazing_density_mean%>% 
+  left_join(soils_elev_woody_grazing_density_p, by = c( 'layer','MUSYM'))%>%filter(grazing_avg < 0.05)
+
+#write.csv(soils_elev_woody_grazing_density_p,"soils_elev_woody_grazing_density_p_110923.csv")
+write.csv(soils_elev_woody_grazing_density_summary,"soils_elev_woody_grazing_density_summary_110923.csv")
+
+#srer_crownarea <- read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/soils_elev_woody_grazing_crownarea_mean.csv')
+
+
+soils_elev_woody_grazing_crownarea_p <- srer_crownarea %>%
+  group_by(layer,FID_srer_g,grazing,MUSYM) %>%
+  summarise(
+    crownarea_mean = weighted.mean(crownArea),
+    crownarea_count = n(),
+    crownarea_sd = sd(crownArea))%>%
+  group_by(layer,MUSYM)%>%
+  summarise(grazing_avg = t.test(crownarea_mean[grazing==1], crownarea_mean[grazing==2])$p.value)
+#summarise(n = n())
+
+soils_elev_woody_grazing_crownarea_mean <- srer_crownarea %>%
+  group_by(layer,FID_srer_g,grazing,MUSYM) %>%
+  summarise(
+    crownarea_sum = weighted.mean(crownArea),
+    crownarea_count = n(),
+    crownarea_sd = sd(crownArea))%>%
+  group_by(layer,grazing,MUSYM)%>%
+  summarise(
+    crownarea_mean = weighted.mean(crownarea_sum),
+    crownarea_count = n(),
+    crownarea_sd = sd(crownarea_sum))
+#summarise(n = n())
+soils_elev_woody_grazing_crownarea_summary = soils_elev_woody_grazing_crownarea_mean%>% 
+  left_join(soils_elev_woody_grazing_crownarea_p, by = c( 'layer','MUSYM'))%>%filter(grazing_avg < 0.05)
+
+write.csv(soils_elev_woody_grazing_crownarea_summary,"soils_elev_woody_grazing_crownarea_summary_110923.csv")
+#write.csv(soils_elev_woody_grazing_crownarea_p,"soils_elev_woody_grazing_crownarea_summary_p_110923.csv")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+###############SUMMARIZING elevation, species, soils, grazing#############
+##Elevation, species and soils##
+species_elev_woody_grazing_soil_cover_p <- srer_cover_rbind %>%
+  group_by(MUSYM, species, layer) %>%
+  summarise(grazing_avg = t.test(cover[grazing==0], cover[grazing==1])$p.value)
+#summarise(n = n())
+
+species_elev_woody_grazing_soil_cover_mean <- srer_cover_rbind %>%
+  group_by(MUSYM, species, layer, grazing) %>%
+  summarise(
+    cover_mean = weighted.mean(cover),
+    cover_count = n(),
+    cover_sd = sd(cover))
+#summarise(n = n())
+species_elev_woody_grazing_soil_cover_summary = species_elev_woody_grazing_soil_cover_mean%>% 
+left_join(species_elev_woody_grazing_soil_cover_p, by = c('species', 'layer', 'MUSYM'))%>%filter(grazing_avg < 0.05)
+
+write.csv(species_elev_woody_grazing_soil_cover_summary,"species_elev_woody_grazing_soil_cover_summary_110823.csv")
+#write.csv(species_elev_woody_grazing_soil_cover_p,"species_elev_woody_grazing_soil_cover_p_110923.csv")
+
+
+##Elevation, species and soils##
+species_elev_woody_grazing_soil_density_p <- srer_density  %>%
+  group_by(layer,MUSYM,species) %>%
+  summarise(grazing_avg = t.test(n[grazing==0], n[grazing==1])$p.value)
+
+species_elev_woody_grazing_soil_density_mean <- srer_density %>%
+  group_by(MUSYM, species, layer, grazing) %>%
+  summarise(
+    density_mean = weighted.mean(n),
+    density_count = n(),
+    density_sd = sd(n)
+  )
+#summarise(n = n())
+species_elev_woody_grazing_soil_density_summary = species_elev_woody_grazing_soil_density_mean%>% 
+  left_join(species_elev_woody_grazing_soil_density_p, by = c('species', 'layer', 'MUSYM'))%>%filter(grazing_avg < 0.05)
+
+#write.csv(species_elev_woody_grazing_soil_density_p,"species_elev_woody_grazing_soil_density_p_090123.csv")
+write.csv(species_elev_woody_grazing_soil_density_summary,"species_elev_woody_grazing_soil_density_summary_110923.csv")
+
+#srer_crownarea <- read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/species_elev_woody_grazing_soil_crownarea_mean.csv')
+##Elevation, species and soils##
+species_elev_woody_grazing_soil_crownarea_p <- srer_crownarea %>%
+  group_by(layer, MUSYM, species) %>%
+  summarise(
+    grazing_avg = ifelse(
+      sum(grazing == 1) >= 2 && sum(grazing == 2) >= 2,
+      t.test(crownArea[grazing == 1], crownArea[grazing == 2])$p.value,
+      NA
+    )
+  )
+
+species_elev_woody_grazing_soil_crownarea_mean <- srer_crownarea%>%
+  group_by(MUSYM, species, layer, grazing) %>%
+  summarise(
+    crownArea_mean = weighted.mean(crownArea),
+    crownArea_count = n(),
+    crownArea_sd = sd(crownArea)
+  )
+
+species_elev_woody_grazing_soil_crownarea_summary = species_elev_woody_grazing_soil_crownarea_mean%>% 
+  left_join(species_elev_woody_grazing_soil_crownarea_p, by = c('species', 'layer', 'MUSYM'))%>%filter(grazing_avg < 0.05)
+
+write.csv(species_elev_woody_grazing_soil_crownarea_summary,"species_elev_woody_grazing_soil_crownarea_summary_110823.csv")
+#write.csv(species_elev_woody_grazing_soil_crownarea_p,"species_elev_woody_grazing_soil_crownarea_summary_110823.csv")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#########SRER SUMMARIZING WITH SOILS PLOTS#########
+cover_layer1 <- species_elev_woody_grazing_soil_cover_summary %>% 
+  filter(layer==1)%>%
+  mutate(across(everything(), ~ round(., 2))) %>% 
+  filter(MUSYM == "EbC")%>%  
+  mutate(landuse = ifelse(grazing < 1, 'protected','grazing'))%>%
+  mutate(upper_limit=cover_mean+cover_sd)%>%
+  mutate(lower_limit = ifelse(cover_mean - cover_sd < 0, 0, cover_mean - cover_sd))
+
+cover_layer2 <- species_elev_woody_grazing_soil_cover_summary %>% 
+  filter(layer==2)%>%
+  mutate(across(everything(), ~ round(., 2))) %>% 
+  filter(MUSYM == "An" |MUSYM =="EbC"|MUSYM =="SoB")%>%  
+  mutate(landuse = ifelse(grazing < 1, 'protected','grazing'))%>%
+  mutate(upper_limit=cover_mean+cover_sd)%>%
+  mutate(lower_limit = ifelse(cover_mean - cover_sd < 0, 0, cover_mean - cover_sd))
+
+cover_layer3 <- species_elev_woody_grazing_soil_cover_summary %>% 
+  filter(layer==3)%>%
+  mutate(across(everything(), ~ round(., 2))) %>% 
+  filter(MUSYM == "An" |MUSYM == "SoB")%>%  
+  mutate(landuse = ifelse(grazing < 1, 'protected','grazing'))%>%
+  mutate(upper_limit=cover_mean+cover_sd)%>%
+  mutate(lower_limit = ifelse(cover_mean - cover_sd < 0, 0, cover_mean - cover_sd))
+
+cover_layer4 <- species_elev_woody_grazing_soil_cover_summary %>% 
+  filter(layer==4)%>%
+  mutate(across(everything(), ~ round(., 2))) %>% 
+  filter(MUSYM == "CtB" |MUSYM == "CuC")%>%  
+  mutate(landuse = ifelse(grazing < 1, 'protected','grazing'))%>%
+  mutate(upper_limit=cover_mean+cover_sd)%>%
+  mutate(lower_limit = ifelse(cover_mean - cover_sd < 0, 0, cover_mean - cover_sd))
+
+density_layer1 <- species_elev_woody_grazing_soil_density_summary %>% 
+  filter(layer==1)%>%
+  mutate(across(everything(), ~ round(., 0))) %>% 
+  filter(MUSYM == "EbC")%>%  
+  mutate(landuse = ifelse(grazing < 1, 'protected','grazing'))
+
+density_layer2 <- species_elev_woody_grazing_soil_density_summary %>% 
+  filter(layer==2)%>%
+  mutate(across(everything(), ~ round(., 0))) %>% 
+  filter(MUSYM == "An" |MUSYM =="EbC"|MUSYM =="SoB")%>%  
+  mutate(landuse = ifelse(grazing < 1, 'protected','grazing'))
+density_layer3 <- species_elev_woody_grazing_soil_density_summary %>% 
+  filter(layer==3)%>%
+  mutate(across(everything(), ~ round(., 0))) %>% 
+  filter(MUSYM == "An" |MUSYM == "SoB")%>%  
+  mutate(landuse = ifelse(grazing < 1, 'protected','grazing'))
+density_layer4 <- species_elev_woody_grazing_soil_density_summary %>% 
+  filter(layer==4)%>%
+  mutate(across(everything(), ~ round(., 0))) %>% 
+  filter(MUSYM == "CtB" |MUSYM == "CuC")%>%  
+  mutate(landuse = ifelse(grazing < 1, 'protected','grazing'))
+
+crownarea_layer1 <- species_elev_woody_grazing_soil_crownarea_summary %>% 
+  filter(layer==1)%>%
+  mutate(across(everything(), ~ round(., 2))) %>% 
+  filter(MUSYM == "EbC")%>%  mutate(landuse = ifelse(grazing > 1, 'grazing','protected'))
+crownarea_layer2 <- species_elev_woody_grazing_soil_crownarea_summary %>% 
+  filter(layer==2)%>%
+  mutate(across(everything(), ~ round(., 2))) %>% 
+  filter(MUSYM == "An" |MUSYM =="EbC"|MUSYM =="SoB")%>%  mutate(landuse = ifelse(grazing > 1, 'grazing','protected'))
+crownarea_layer3 <- species_elev_woody_grazing_soil_crownarea_summary %>% 
+  filter(layer==3)%>%
+  mutate(across(everything(), ~ round(., 2))) %>% 
+  filter(MUSYM == "An" |MUSYM == "SoB")%>%  mutate(landuse = ifelse(grazing > 1, 'grazing','protected'))
+crownarea_layer4 <- species_elev_woody_grazing_soil_crownarea_summary %>% 
+  filter(layer==4)%>%
+  mutate(across(everything(), ~ round(., 2))) %>% 
+  filter(MUSYM == "CtB" |MUSYM == "CuC")%>%  mutate(landuse = ifelse(grazing > 1, 'grazing','protected'))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+###BARPLOTS COMPARING grazing cover
+cover_layer1_plot<- ggplot(cover_layer1, aes(x = species, y = cover_mean, fill = grazing)) +
+  geom_col(alpha = 0.4, position = "identity")+
+  facet_grid(~ MUSYM) +
+  labs(fill = "Layer 1")+  # Change the legend title
+  theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=14,face="bold"))+
+  ylim(0,20)+ geom_hline(aes(yintercept = 12.54), color = "blue", linetype = "dashed", size = 1)+ # Add a mean line+ # Add horizontal lines at specific y-intercepts # Add horizontal lines at specific y-intercepts
+  geom_errorbar(aes(ymin = lower_limit, ymax = upper_limit, linetype = as.factor(grazing)),  width = 0.4, position = position_dodge(width = 1),size=1)
+    
+  
+windows()
+print(cover_layer1_plot)
+
+cover_layer2_plot<- ggplot(cover_layer2, aes(x = species, y = cover_mean, fill = grazing)) +
+  geom_col(alpha = 0.4, position = "identity") +
+  facet_wrap(~ MUSYM)+
+  labs(fill = "Layer 2")+  # Change the legend title
+  theme(axis.text=element_text(size=5),
+        axis.title=element_text(size=14,face="bold"))+
+  ylim(0,20)+
+ geom_hline(aes(yintercept = 15.68), color = "red", linetype = "dashed", size = 1) + # Add horizontal lines at specific y-intercepts
+ geom_hline(aes(yintercept = 13.80), color = "red", linetype = "dashed", size = 1)+  # Add horizontal lines at specific y-intercepts
+ geom_hline(aes(yintercept = 13.52), color = "red", linetype = "dashed", size = 1) +  # Add horizontal lines at specific y-intercepts
+ geom_hline(aes(yintercept = 14.22), color ='blue', linetype = "dashed", size = 1) + # Add horizontal lines at specific y-intercepts # Add horizontal lines at specific y-intercepts
+ geom_errorbar(aes(ymin = lower_limit, ymax = upper_limit, linetype = as.factor(grazing)),  width = 0.4, position = position_dodge(width = 1),size=1)
+windows()
+print(cover_layer2_plot)
+
+cover_layer3_plot<- ggplot(cover_layer3, aes(x = species, y = cover_mean, fill = grazing)) +
+  geom_col(alpha = 0.4, position = "identity") +
+  facet_wrap(~ MUSYM)+
+  labs(fill = "Layer 3")+  # Change the legend title
+  theme(axis.text=element_text(size=8),
+        axis.title=element_text(size=14,face="bold"))+
+  ylim(0,20)+
+ geom_hline(aes(yintercept = 18.50), color = "red", linetype = "dashed", size = 1) + # Add horizontal lines at specific y-intercepts
+# geom_hline(aes(yintercept = 16.35), color = "red", linetype = "dashed", size = 1)+
+ geom_hline(aes(yintercept = 16.81), color = 'blue', linetype = "dashed", size = 1) + # Add horizontal lines at specific y-intercepts # Add horizontal lines at specific y-intercepts
+  geom_errorbar(aes(ymin = lower_limit, ymax = upper_limit, linetype = as.factor(grazing)),  width = 0.4, position = position_dodge(width = 1),size=1)
+
+windows()
+print(cover_layer3_plot)
+
+
+cover_layer4_plot<- ggplot(cover_layer4, aes(x = species, y = cover_mean, fill = grazing)) +
+  geom_col(alpha = 0.4, position = "identity") +
+  facet_wrap(~ MUSYM)+
+  labs(fill = "Layer 4")+  # Change the legend title
+  theme(axis.text=element_text(size=8),
+        axis.title=element_text(size=14,face="bold"))+
+  ylim(0,43)+
+ geom_hline(aes(yintercept = 42.09), color = "red", linetype = "dashed", size = 1) + # Add horizontal lines at specific y-intercepts
+ geom_hline(aes(yintercept = 34.98), color = "red", linetype = "dashed", size = 1)+
+  geom_hline(aes(yintercept = 39.00), color = "blue", linetype = "dashed", size = 1) + # Add horizontal lines at specific y-intercepts # Add horizontal lines at specific y-intercepts
+   geom_errorbar(aes(ymin = lower_limit, ymax = upper_limit, linetype = as.factor(grazing)),  width = 0.4, position = position_dodge(width = 1),size=1)+ scale_y_break(breaks=c(20, 35), scales=c(0.1, 0.1))
+#  scale_y_continuous(sec.axis = sec_axis(~., name = "Secondary Axis Name", breaks = c(20, 30, 40, 50))) +
+
+
+windows()
+print(cover_layer4_plot)
+
+
+
+
+library(gridExtra)
+
+windows()
+grid.arrange(cover_layer1_plot, cover_layer2_plot,cover_layer3_plot, nrow = 1)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+##density
+density_layer1_plot<- ggplot(density_layer1, aes(x = species, y = density_mean, fill = grazing)) +
+  geom_col(alpha = 0.4, position = "identity")
+
+density_layer2_plot<- ggplot(density_layer2, aes(x = species, y = density_mean, fill = grazing)) +
+  geom_col(alpha = 0.4, position = "identity") +
+  facet_wrap(~ MUSYM)
+
+density_layer3_plot<- ggplot(density_layer3, aes(x = species, y = density_mean, fill = grazing)) +
+  geom_col(alpha = 0.4, position = "identity") +
+  facet_wrap(~ MUSYM)
+
+density_layer4_plot<- ggplot(density_layer4, aes(x = species, y = density_mean, fill = grazing)) +
+  geom_col(alpha = 0.4, position = "identity") +
+  facet_wrap(~ MUSYM)
+#windows()
+#grid.arrange(density_layer1_plot, density_layer2_plot,density_layer3_plot,density_layer4_plot, nrow = 2)
+
+
+
+##crownarea
+crownarea_layer1_plot<- ggplot(crownarea_layer1, aes(x = species, y = crownArea_mean, fill = grazing)) +
+  geom_col(alpha = 0.4, position = "identity")
+
+crownarea_layer2_plot<- ggplot(crownarea_layer2, aes(x = species, y = crownArea_mean, fill = grazing)) +
+  geom_col(alpha = 0.4, position = "identity") +
+  facet_wrap(~ MUSYM)
+
+crownarea_layer3_plot<- ggplot(crownarea_layer3, aes(x = species, y = crownArea_mean, fill = grazing)) +
+  geom_col(alpha = 0.4, position = "identity") +
+  facet_wrap(~ MUSYM)
+
+crownarea_layer4_plot<- ggplot(crownarea_layer4, aes(x = species, y = crownArea_mean, fill = grazing)) +
+  geom_col(alpha = 0.4, position = "identity") +
+  facet_wrap(~ MUSYM)
+
+
+#windows()
+#grid.arrange(crownarea_layer1_plot, crownarea_layer2_plot,crownarea_layer3_plot,crownarea_layer4_plot, nrow = 2)
+
+
+
+####make density plots density
+
+theme_set(theme_minimal())
+density_layer1_density <- srer_density %>% 
+  filter(layer==1)%>%
+  mutate_if(is.numeric, round)%>%
+  filter(MUSYM == "EbC")%>%  
+  mutate(landuse = ifelse(grazing > 1, 'grazing','protected'))
+density_layer2_density <- srer_density %>% 
+  filter(layer==2)%>%
+  mutate_if(is.numeric, round)%>%
+  filter(MUSYM == "An" |MUSYM =="EbC"|MUSYM =="SoB")%>%  
+  mutate(landuse = ifelse(grazing > 1, 'grazing','protected'))
+density_layer3_density <- srer_density %>% 
+  filter(layer==3)%>%
+  mutate_if(is.numeric, round)%>%
+  filter(MUSYM == "An" |MUSYM == "SoB")%>%  
+  mutate(landuse = ifelse(grazing > 1, 'grazing','protected'))
+density_layer4_density <- srer_density %>% 
+  filter(layer==4)%>%
+  mutate_if(is.numeric, round)%>%
+  filter(MUSYM == "CtB" |MUSYM == "CuC")%>%  
+  mutate(landuse = ifelse(grazing > 1, 'grazing','protected'))
+
+
+# The diamonds dataset is natively available with R.
+
+# Without transparency (left)
+#ggplot(data=density_layer1_density, aes(x=n, group=species, fill=grazing)) +
+#  facet_wrap(~MUSYM)+
+#  geom_density(adjust=1.5) +
+#  theme_ipsum()
+#p10
+density_elevation <- srer_density%>%
+  group_by(MUSYM, layer,species) %>%
+  summarise(
+    density_mean = weighted.mean(n),
+    density_count = n(),
+    density_sd = sd(n)
+  )
+
+
+# With transparency (right)
+p2 <- ggplot(data=diamonds, aes(x=price, group=cut, fill=cut)) +
+  geom_density(adjust=1.5, alpha=.4) +
+  theme_ipsum()
+
+density_layer1_density$species <- as.factor(density_layer1_density$species)
+density_layer1_density$grazing <- as.factor(density_layer1_density$grazing)
+density_layer2_density$species <- as.factor(density_layer2_density$species)
+density_layer2_density$grazing <- as.factor(density_layer2_density$grazing)
+density_layer3_density$species <- as.factor(density_layer3_density$species)
+density_layer3_density$grazing <- as.factor(density_layer3_density$grazing)
+density_layer4_density$species <- as.factor(density_layer4_density$species)
+density_layer4_density$grazing <- as.factor(density_layer4_density$grazing)
+
+
+density_layer1_density_plot<-ggplot(data = density_layer1_density, aes(x = n, y = species, fill = grazing)) + facet_wrap(~MUSYM)+
+  ggridges::geom_density_ridges(quantile_lines=TRUE, quantile_fun=function(n,...)mean(n),scale = 1) + xlim(0, 20)+
+  scale_x_continuous(
+    limits = c(0, 10),  # Adjust the range as needed
+    breaks = seq(0, 10, by = 1),  # Specify the tick positions
+    labels = seq(0, 10, by = 1)  # Specify the tick labels
+  )+scale_fill_manual(values = alpha(c("red", "blue", "green"), alpha = 0.5))+ ggtitle("layer 1 cover")
+
+
+density_layer2_density_plot<-ggplot(data = density_layer2_density, aes(x = n, y = species, fill = grazing)) + facet_wrap(~MUSYM)+
+  ggridges::geom_density_ridges(quantile_lines=TRUE, quantile_fun=function(n,...)mean(n),scale = 1) + 
+  scale_x_continuous(
+    limits = c(0, 10),  # Adjust the range as needed
+    breaks = seq(0, 10, by = 1),  # Specify the tick positions
+    labels = seq(0, 10, by = 1)  # Specify the tick labels
+  )+scale_fill_manual(values = alpha(c("red", "blue", "green"), alpha = 0.5))+ ggtitle("layer 2 cover")
+
+
+density_layer3_density_plot<-ggplot(data = density_layer3_density, aes(x = n, y = species, fill = grazing)) + facet_wrap(~MUSYM)+
+  ggridges::geom_density_ridges(quantile_lines=TRUE, quantile_fun=function(n,...)mean(n),scale = 1) + 
+  scale_x_continuous(
+    limits = c(0, 15),  # Adjust the range as needed
+    breaks = seq(0, 15, by = 1),  # Specify the tick positions
+    labels = seq(0, 15, by = 1)  # Specify the tick labels
+  )+scale_fill_manual(values = alpha(c("red", "blue", "green"), alpha = 0.5))+ ggtitle("layer 3 cover")
+
+
+density_layer4_density_plot <- ggplot(data = density_layer4_density, aes(x = n, y = species, fill = grazing)) + 
+  facet_wrap(~MUSYM) +
+  ggridges::geom_density_ridges(quantile_lines = TRUE, quantile_fun = function(n, ...) mean(n), scale = 1) +
+  scale_x_continuous(
+    limits = c(0, 20),  # Adjust the x-axis range as needed
+    breaks = seq(0, 20, by = 1),  # Specify the x-axis tick positions
+    labels = seq(0, 20, by = 1)  # Specify the x-axis tick labels
+  ) +scale_fill_manual(values = alpha(c("red", "blue", "green"), alpha = 0.5))+ ggtitle("layer 4 cover")
+
+
+# Display the bubble plot
+#windows()
+#grid.arrange(density_layer1_density_plot, density_layer2_density_plot,density_layer3_density_plot,density_layer4_density_plot, nrow = 2)
+
+species_elev_woody_grazing_soil_density_summary_layer1 = species_elev_woody_grazing_soil_density_summary%>% filter(layer==1)
+species_elev_woody_grazing_soil_density_summary_layer2 = species_elev_woody_grazing_soil_density_summary%>% filter(layer==2)
+species_elev_woody_grazing_soil_density_summary_layer3 = species_elev_woody_grazing_soil_density_summary%>% filter(layer==3)
+species_elev_woody_grazing_soil_density_summary_layer4 = species_elev_woody_grazing_soil_density_summary%>% filter(layer==4)
+  
+species_elev_woody_grazing_soil_density_summary_layer1_plot =
+  species_elev_woody_grazing_soil_density_summary_layer1%>%
+  ggplot(aes(x = species, y = density_mean)) +
+  geom_line(aes(group = species))+
+  geom_point(aes(color = grazing, size = density_mean), alpha = 0.5) +
+  facet_grid(cols = vars(MUSYM), scales = "free") + 
+  scale_size(range = c(1, 15)) + # Adjust the range of points size
+  theme_set(theme_bw() +theme(legend.position = "none"))+
+  theme(axis.text.x = element_text(angle = 90))+
+  ylim(0,13)
+windows()
+print(species_elev_woody_grazing_soil_density_summary_layer1_plot)
+
+species_elev_woody_grazing_soil_density_summary_layer2_plot =
+  species_elev_woody_grazing_soil_density_summary_layer2%>%
+  ggplot(aes(x = species, y = density_mean)) +
+  geom_line(aes(group = species))+
+  geom_point(aes(color = grazing, size = density_mean), alpha = 0.5) +
+  facet_grid(cols = vars(MUSYM), scales = "free") + 
+  scale_size(range = c(1, 15)) + # Adjust the range of points size
+  theme_set(theme_bw() +theme(legend.position = "none"))+
+  theme(axis.text.x = element_text(angle = 90))+
+  ylim(0,13)
+windows()
+print(species_elev_woody_grazing_soil_density_summary_layer2_plot)
+
+species_elev_woody_grazing_soil_density_summary_layer3_plot =
+  species_elev_woody_grazing_soil_density_summary_layer3%>%
+  ggplot(aes(x = species, y = density_mean)) +
+  geom_line(aes(group = species))+
+  geom_point(aes(color = grazing, size = density_mean), alpha = 0.5) +
+  facet_grid(cols = vars(MUSYM), scales = "free") + 
+  scale_size(range = c(1, 15)) + # Adjust the range of points size
+  theme_set(theme_bw() +theme(legend.position = "none"))+
+  theme(axis.text.x = element_text(angle = 90))+
+  ylim(0,13)
+windows()
+print(species_elev_woody_grazing_soil_density_summary_layer3_plot)
+
+species_elev_woody_grazing_soil_density_summary_layer4_plot =
+  species_elev_woody_grazing_soil_density_summary_layer4 %>%
+  ggplot(aes(x = species, y = density_mean)) +
+  geom_line(aes(group = species))+
+  geom_point(aes(color = grazing, size = density_mean), alpha = 0.5) +
+  facet_grid(cols = vars(MUSYM), scales = "free") + 
+  scale_size(range = c(1, 15)) + # Adjust the range of points size
+  theme_set(theme_bw() +theme(legend.position = "outside"))+
+  theme(axis.text.x = element_text(angle = 90))
+windows()
+print(species_elev_woody_grazing_soil_density_summary_layer4_plot)
+
+
+  # Display the bubble plot
+#windows()
+#gridExtra::grid.arrange(species_elev_woody_grazing_soil_density_summary_layer1_plot, 
+#             species_elev_woody_grazing_soil_density_summary_layer2_plot,
+#             species_elev_woody_grazing_soil_density_summary_layer3_plot,
+#             species_elev_woody_grazing_soil_density_summary_layer4_plot, nrow = 2)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+data <- data.frame(
+  x = rnorm(1000), 
+  y = rnorm(1000, mean=2)
+)
+
+data %>% 
+  ggplot( aes(density_layer4_density) ) + 
+  geom_density( aes(x = m, y = ..density..), binwidth = diff(range(data$x))/30, fill="#69b3a2" ) + 
+  geom_label( aes(x=4.5, y=0.25, label="variable1"), color="#69b3a2") +
+  geom_density( aes(x = y, y = -..density..), binwidth = diff(range(data$x))/30, fill= "#404080") +
+  geom_label( aes(x=4.5, y=-0.25, label="variable2"), color="#404080") +
+  theme_ipsum() +
+  xlab("value of x")
+
+
+
+
+
+
+
+
+
+ridge_density_plot
+# SPIDER crownarea Library
+install.packages('fmsb')
+library(fmsb)
+
+# Create data: note in High school for several students
+set.seed(99)
+data <- as.data.frame(matrix( sample( 0:20 , 15 , replace=F) , ncol=5))
+colnames(data) <- c("math" , "english" , "biology" , "music" , "R-coding" )
+rownames(data) <- paste("mister" , letters[1:3] , sep="-")
+
+# To use the fmsb package, I have to add 2 lines to the dataframe: the max and min of each variable to show on the plot!
+data <- rbind(rep(20,5) , rep(0,5) , data)
+
+# Color vector
+colors_border=c( rgb(0.2,0.5,0.5,0.9), rgb(0.8,0.2,0.5,0.9) , rgb(0.7,0.5,0.1,0.9) )
+colors_in=c( rgb(0.2,0.5,0.5,0.4), rgb(0.8,0.2,0.5,0.4) , rgb(0.7,0.5,0.1,0.4) )
+
+# plot with default options:
+radarchart(crownarea_layer1, axistype=1 , 
+            #custom polygon
+            pcol=colors_border , pfcol=colors_in , plwd=4 , plty=1,
+            #custom the grid
+            cglcol="grey", cglty=1, axislabcol="grey", caxislabels=seq(0,20,5), cglwd=0.8,
+            #custom labels
+            vlcex=0.8 
+)
+
+# Add a legend
+legend(x=0.7, y=1, legend = rownames(data[-c(1,2),]), bty = "n", pch=20 , col=colors_in , text.col = "grey", cex=1.2, pt.cex=3)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+###########ELEVATION AND SPECIES plots and ttest######
+mesquite_cover_nograzing =  srer_cover_nograzing %>%  filter(species == 'mesquite')
+mesquite_cover_grazing = srer_cover_grazing %>% filter(species == 'mesquite')
+
+creosote_cover_nograzing =  srer_cover_nograzing %>%  filter(species == 'creosote')
+creosote_cover_grazing = srer_cover_grazing %>% filter(species == 'creosote')
+
+cactus_cover_nograzing =  srer_cover_nograzing %>%  filter(species == 'cactus')
+cactus_cover_grazing = srer_cover_grazing %>% filter(species == 'cactus')
+
+paloverde_cover_nograzing =  srer_cover_nograzing %>%  filter(species == 'paloverde')
+paloverde_cover_grazing = srer_cover_grazing %>% filter(species == 'paloverde')
+
+lotebush_cover_nograzing =  srer_cover_nograzing %>%  filter(species == 'lotebush')
+lotebush_cover_grazing = srer_cover_grazing %>% filter(species == 'lotebush')
+
+grass_cover_nograzing =  srer_cover_nograzing %>%  filter(species == 'grass')
+grass_cover_grazing = srer_cover_grazing %>% filter(species == 'grass')
+
+bareground_cover_nograzing =  srer_cover_nograzing %>%  filter(species == 'bareground')
+bareground_cover_grazing = srer_cover_grazing %>% filter(species == 'bareground')
+
+t.test(mesquite_cover_nograzing$cover, mesquite_cover_grazing$cover,alternative = "greater", var.equal = TRUE)
+t.test(creosote_cover_nograzing$cover, creosote_cover_grazing$cover,alternative = "less", var.equal = TRUE)
+t.test(cactus_cover_nograzing$cover, cactus_cover_grazing$cover,alternative = "greater", var.equal = TRUE)
+t.test(paloverde_cover_nograzing$cover, paloverde_cover_grazing$cover,alternative = "less", var.equal = TRUE)
+t.test(lotebush_cover_nograzing$cover, lotebush_cover_grazing$cover,alternative = "less", var.equal = TRUE)
+
+t.test(bareground_cover_nograzing$cover,bareground_cover_grazing$cover,alternative = "greater", var.equal = TRUE)
+t.test(grass_cover_nograzing$cover, grass_cover_grazing$cover,alternative = "greater", var.equal = TRUE)
+
+
+##ELEVATION##
+#woody#
+low_elev_woody_nograzing <- srer_cover_nograzing %>% filter(layer == 1) %>% filter(species == "grass")
+low_elev_woody_grazing <- srer_cover_grazing %>% filter(layer == 1)  %>% filter(species == "grass")
+
+
+midlow_elev_woody_nograzing <- srer_cover_nograzing %>% filter(layer == 2) %>% filter(species == "grass")
+midlow_elev_woody_grazing <- srer_cover_grazing %>% filter(layer == 2) %>% filter(species == "grass")
+
+
+midhigh_elev_woody_nograzing <- srer_cover_nograzing %>% filter(layer == 3) %>% filter(species == "grass")
+midhigh_elev_wood_grazingy <- srer_cover_grazing %>% filter(layer == 3) %>% filter(species == "grass")
+
+
+high_elev_woody_nograzing <- srer_cover_nograzing %>% filter(layer == 4) %>% filter(species == "grass")
+high_elev_woody_grazing <- srer_cover_grazing %>% filter(layer == 4) %>% filter(species == "grass")
+
+
+t.test(low_elev_woody_nograzing$cover, low_elev_woody_grazing$cover,alternative = "greater", var.equal = TRUE)
+t.test(midlow_elev_woody_nograzing$cover, midlow_elev_woody_grazing$cover,alternative = "greater", var.equal = TRUE)
+t.test(midhigh_elev_woody_nograzing$cover, midhigh_elev_wood_grazingy$cover,alternative = "greater", var.equal = TRUE)
+t.test(high_elev_woody_nograzing$cover, high_elev_woody_grazing$cover,alternative = "greater", var.equal = TRUE)
+
+
+mesquite_density_nograzing =  srer_density_nograzing %>%  filter(species == 'mesquite')
+mesquite_density_grazing = srer_density_grazing %>% filter(species == 'mesquite')
+
+creosote_density_nograzing =  srer_density_nograzing %>%  filter(species == 'creosote')
+creosote_density_grazing = srer_density_grazing %>% filter(species == 'creosote')
+
+cactus_density_nograzing =  srer_density_nograzing %>%  filter(species == 'cactus')
+cactus_density_grazing = srer_density_grazing %>% filter(species == 'cactus')
+
+
+paloverde_density_nograzing =  srer_density_nograzing %>%  filter(species == 'paloverde')
+paloverde_density_grazing = srer_density_grazing %>% filter(species == 'paloverde')
+
+lotebush_density_nograzing =  srer_density_nograzing %>%  filter(species == 'lotebush')
+lotebush_density_grazing = srer_density_grazing %>% filter(species == 'lotebush')
+
+
+t.test(srer_density_nograzing$density, srer_density_grazing$density,alternative = "less", var.equal = TRUE, mu=0)
+t.test(mesquite_density_nograzing$density, mesquite_density_grazing$density,alternative = "less", var.equal = TRUE)
+t.test(creosote_density_nograzing$density, creosote_density_grazing$density,alternative = "less", var.equal = TRUE)
+t.test(cactus_density_nograzing$density, cactus_density_grazing$density, alternative = "less", var.equal = TRUE)
+t.test(paloverde_density_nograzing$density, paloverde_density_grazing$density, alternative = "less", var.equal = TRUE)
+t.test(lotebush_density_nograzing$density, lotebush_density_grazing$density, alternative = "less", var.equal = TRUE)
+
+t.test(srer_density_nograzing_elev1$density, srer_density_grazing_elev1$density,alternative = "less", var.equal = TRUE)
+t.test(srer_density_nograzing_elev2$density, srer_density_grazing_elev2$density,alternative = "less", var.equal = TRUE)
+t.test(srer_density_nograzing_elev3$density, srer_density_grazing_elev3$density,alternative = "less", var.equal = TRUE)
+t.test(srer_density_nograzing_elev4$density, srer_density_grazing_elev4$density,alternative = "less", var.equal = TRUE)
+
+##Elevation, species and soils##
+low_elev_woody_nograzing_soil_density <- srer_density_nograzing %>% filter(layer == 1) %>%  
+  group_by(MUSYM, species) %>% 
+  summarise_at(vars(density), list(density = mean))
+low_elev_woody_grazing_soil_density <- srer_density_grazing %>% filter(layer == 1) %>% 
+  group_by(MUSYM, species) %>% 
+  summarise_at(vars(density), list(density = mean))
+
+midlow_elev_woody_nograzing_soil_density <- srer_density_nograzing %>% filter(layer == 2) %>%  
+  group_by(MUSYM, species) %>% 
+  summarise_at(vars(density), list(density = mean))
+midlow_elev_woody_grazing_soil_density <- srer_density_grazing %>% filter(layer == 2) %>% 
+  group_by(MUSYM, species) %>% 
+  summarise_at(vars(density), list(density = mean))
+
+midhigh_elev_woody_nograzing_soil_density <- srer_density_nograzing %>% filter(layer == 3) %>%  
+  group_by(MUSYM, species) %>% 
+  summarise_at(vars(density), list(density = mean))
+midhigh_elev_woody_grazing_soil_density <- srer_density_grazing %>% filter(layer == 3) %>% 
+  group_by(MUSYM, species) %>% 
+  summarise_at(vars(density), list(density = mean))
+
+high_elev_woody_nograzing_soil_density <- srer_density_nograzing %>% filter(layer == 4) %>%  
+  group_by(MUSYM, species) %>% 
+  summarise_at(vars(density), list(density = mean))
+high_elev_woody_grazing_soil_density <- srer_density_grazing %>% filter(layer == 4) %>% 
+  group_by(MUSYM, species) %>% 
+  summarise_at(vars(density), list(density = mean))
+
+
+##ELEVATION##
+#woody#
+low_elev_woody_nograzing <- srer_density_nograzing %>% filter(layer == 1)
+low_elev_woody_grazing <- srer_density_grazing %>% filter(layer == 1)
+
+mesquite_density_nograzing =  low_elev_woody_nograzing %>%  filter(species == 'mesquite')
+mesquite_density_grazing = low_elev_woody_grazing %>% filter(species == 'mesquite')
+
+creosote_density_nograzing =  low_elev_woody_nograzing %>%  filter(species == 'creosote')
+creosote_density_grazing = low_elev_woody_grazing %>% filter(species == 'creosote')
+
+
+cactus_density_nograzing =  low_elev_woody_nograzing %>%  filter(species == 'cactus')
+cactus_density_grazing = low_elev_woody_grazing %>% filter(species == 'cactus')
+
+
+paloverde_density_nograzing =  low_elev_woody_nograzing %>%  filter(species == 'paloverde')
+paloverde_density_grazing = low_elev_woody_grazing %>% filter(species == 'paloverde')
+
+lotebush_density_nograzing =  low_elev_woody_nograzing %>%  filter(species == 'lotebush')
+lotebush_density_grazing = low_elev_woody_grazing %>% filter(species == 'lotebush')
+
+t.test(low_elev_woody_nograzing$density, low_elev_woody_grazing$density,alternative = "less", var.equal = TRUE)
+t.test(mesquite_density_nograzing$density, mesquite_density_grazing$density,alternative = "less", var.equal = TRUE)
+t.test(creosote_density_nograzing$density, creosote_density_grazing$density,alternative = "less", var.equal = TRUE)
+t.test(cactus_density_nograzing$density, cactus_density_grazing$density, alternative = "less", var.equal = TRUE)
+t.test(paloverde_density_nograzing$density, paloverde_density_grazing$density, alternative = "greater", var.equal = TRUE)
+t.test(lotebush_density_nograzing$density, lotebush_density_grazing$density, alternative = "less", var.equal = TRUE)
+
+
+
+midlow_elev_woody_nograzing <- srer_density_nograzing %>% filter(FID_elevat == 1)
+midlow_elev_woody_grazing <- srer_density_grazing %>% filter(FID_elevat == 1)
+
+mesquite_density_nograzing =  midlow_elev_woody_nograzing %>%  filter(species == 'mesquite')
+mesquite_density_grazing = midlow_elev_woody_grazing %>% filter(species == 'mesquite')
+
+creosote_density_nograzing =  midlow_elev_woody_nograzing %>%  filter(species == 'creosote')
+creosote_density_grazing = midlow_elev_woody_grazing %>% filter(species == 'creosote')
+
+
+cactus_density_nograzing =  midlow_elev_woody_nograzing %>%  filter(species == 'cactus')
+cactus_density_grazing = midlow_elev_woody_grazing %>% filter(species == 'cactus')
+
+
+paloverde_density_nograzing =  midlow_elev_woody_nograzing %>%  filter(species == 'paloverde')
+paloverde_density_grazing = midlow_elev_woody_grazing %>% filter(species == 'paloverde')
+
+lotebush_density_nograzing =  midlow_elev_woody_nograzing %>%  filter(species == 'lotebush')
+lotebush_density_grazing = midlow_elev_woody_grazing %>% filter(species == 'lotebush')
+
+t.test(midlow_elev_woody_nograzing$density, midlow_elev_woody_grazing$density,alternative = "less")
+t.test(mesquite_density_nograzing$density, mesquite_density_grazing$density,alternative = "less")
+t.test(creosote_density_nograzing$density, creosote_density_grazing$density,alternative = "less")
+t.test(cactus_density_nograzing$density, cactus_density_grazing$density, alternative = "less")
+t.test(paloverde_density_nograzing$density, paloverde_density_grazing$density, alternative = "less")
+t.test(lotebush_density_nograzing$density, lotebush_density_grazing$density, alternative = "less")
+
+
+
+
+
+midhigh_elev_woody_nograzing <- srer_density_nograzing %>% filter(FID_elevat == 2)
+midhigh_elev_woody_grazing <- srer_density_grazing %>% filter(FID_elevat == 2)
+
+mesquite_density_nograzing =  midhigh_elev_woody_nograzing %>%  filter(species == 'mesquite')
+mesquite_density_grazing = midhigh_elev_woody_grazing %>% filter(species == 'mesquite')
+
+creosote_density_nograzing =  midhigh_elev_woody_nograzing %>%  filter(species == 'creosote')
+creosote_density_grazing = midhigh_elev_woody_grazing %>% filter(species == 'creosote')
+
+
+cactus_density_nograzing =  midhigh_elev_woody_nograzing %>%  filter(species == 'cactus')
+cactus_density_grazing = midhigh_elev_woody_grazing %>% filter(species == 'cactus')
+
+
+paloverde_density_nograzing =  midhigh_elev_woody_nograzing %>%  filter(species == 'paloverde')
+paloverde_density_grazing = midhigh_elev_woody_grazing %>% filter(species == 'paloverde')
+
+lotebush_density_nograzing =  midhigh_elev_woody_nograzing %>%  filter(species == 'lotebush')
+lotebush_density_grazing = midhigh_elev_woody_grazing %>% filter(species == 'lotebush')
+
+
+t.test(midhigh_elev_woody_nograzing$density, midhigh_elev_wood_grazing$density,alternative = "less", var.equal = TRUE)
+t.test(mesquite_density_nograzing$density, mesquite_density_grazing$density,alternative = "less", var.equal = TRUE)
+t.test(creosote_density_nograzing$density, creosote_density_grazing$density,alternative = "less", var.equal = TRUE)
+t.test(cactus_density_nograzing$density, cactus_density_grazing$density, alternative = "less", var.equal = TRUE)
+t.test(paloverde_density_nograzing$density, paloverde_density_grazing$density, alternative = "less", var.equal = TRUE)
+t.test(lotebush_density_nograzing$density, lotebush_density_grazing$density, alternative = "less", var.equal = TRUE)
+
+
+
+
+high_elev_woody_nograzing <- srer_density_nograzing %>% filter(FID_elevat == 3)
+high_elev_woody_grazing <- srer_density_grazing %>% filter(FID_elevat == 3)
+
+mesquite_density_nograzing =  high_elev_woody_nograzing %>%  filter(species == 'mesquite')
+mesquite_density_grazing = high_elev_woody_grazing %>% filter(species == 'mesquite')
+
+creosote_density_nograzing =  high_elev_woody_nograzing %>%  filter(species == 'creosote')
+creosote_density_grazing = high_elev_woody_grazing %>% filter(species == 'creosote')
+
+
+cactus_density_nograzing =  high_elev_woody_nograzing %>%  filter(species == 'cactus')
+cactus_density_grazing = high_elev_woody_grazing %>% filter(species == 'cactus')
+
+
+paloverde_density_nograzing =  high_elev_woody_nograzing %>%  filter(species == 'paloverde')
+paloverde_density_grazing = high_elev_woody_grazing %>% filter(species == 'paloverde')
+lotebush_density_nograzing =  high_elev_woody_nograzing %>%  filter(species == 'lotebush')
+lotebush_density_grazing = high_elev_woody_grazing %>% filter(species == 'lotebush')
+
+
+
+
+
+t.test(high_elev_woody_nograzing$density, high_elev_woody_grazing$density,alternative = "less", var.equal = TRUE)
+t.test(mesquite_density_nograzing$density, mesquite_density_grazing$density,alternative = "less", var.equal = TRUE)
+t.test(creosote_density_nograzing$density, creosote_density_grazing$density,alternative = "less", var.equal = TRUE)
+t.test(cactus_density_nograzing$density, cactus_density_grazing$density, alternative = "less", var.equal = TRUE)
+t.test(paloverde_density_nograzing$density, paloverde_density_grazing$density, alternative = "less", var.equal = TRUE)
+
+t.test(lotebush_density_nograzing$density, lotebush_density_grazing$density, alternative = "less", var.equal = TRUE)
+
+
+
+
+
+
+
+
+mesquite_crownarea_nograzing =  srer_crownarea_nograzing %>%  filter(species == 'mesquite')
+mesquite_crownarea_grazing = srer_crownarea_grazing %>% filter(species == 'mesquite')
+
+
+creosote_crownarea_nograzing =  srer_crownarea_nograzing %>%  filter(species == 'creosote')
+creosote_crownarea_grazing = srer_crownarea_grazing %>% filter(species == 'creosote')
+
+
+cactus_crownarea_nograzing =  srer_crownarea_nograzing %>%  filter(species == 'cactus')
+cactus_crownarea_grazing = srer_crownarea_grazing %>% filter(species == 'cactus')
+
+
+paloverde_crownarea_nograzing =  srer_crownarea_nograzing %>%  filter(species == 'paloverde')
+paloverde_crownarea_grazing = srer_crownarea_grazing %>% filter(species == 'paloverde')
+
+
+lotebush_crownarea_nograzing =  srer_crownarea_nograzing %>%  filter(species == 'lotebush')
+lotebush_crownarea_grazing = srer_crownarea_grazing %>% filter(species == 'lotebush')
+
+
+
+
+t.test(srer_crownarea_nograzing$crownArea_mean, srer_crownarea_grazing$crownArea_mean,alternative = "greater", var.equal = TRUE, mu=0)
+t.test(mesquite_crownarea_nograzing$crownArea_mean, mesquite_crownarea_grazing$crownArea_mean,alternative = "greater", var.equal = TRUE)
+t.test(creosote_crownarea_nograzing$crownArea_mean, creosote_crownarea_grazing$crownArea_mean,alternative = "less", var.equal = TRUE)
+t.test(cactus_crownarea_nograzing$crownArea_mean, cactus_crownarea_grazing$crownArea_mean, alternative = "greater", var.equal = TRUE)
+t.test(paloverde_crownarea_nograzing$crownArea_mean, paloverde_crownarea_grazing$crownArea_mean, alternative = "greater", var.equal = TRUE)
+t.test(lotebush_crownarea_nograzing$crownArea_mean, lotebush_crownarea_grazing$crownArea_mean, alternative = "greater", var.equal = TRUE)
+wilcox.test(mesquite_crownarea_nograzing$crownArea_mean, mesquite_crownarea_grazing$crownArea_mean)
+wilcox.test(srer_crownarea_nograzing$crownArea_mean, srer_crownarea_grazing$crownArea_mean)
+
+##ELEVATION##
+#woody#
+low_elev_srer_crownarea <- srer_crownarea %>% filter(FID_elevat == 0)
+low_elev_woody_nograzing <- srer_crownarea_nograzing %>% filter(FID_elevat == 0)
+low_elev_woody_grazing <- srer_crownarea_grazing %>% filter(FID_elevat == 0)
+
+mesquite_crownarea_nograzing =  low_elev_woody_nograzing %>%  filter(species == 'mesquite')
+mesquite_crownarea_grazing = low_elev_woody_grazing %>% filter(species == 'mesquite')
+
+creosote_crownarea_nograzing =  low_elev_woody_nograzing %>%  filter(species == 'creosote')
+creosote_crownarea_grazing = low_elev_woody_grazing %>% filter(species == 'creosote')
+
+
+cactus_crownarea_nograzing =  low_elev_woody_nograzing %>%  filter(species == 'cactus')
+cactus_crownarea_grazing = low_elev_woody_grazing %>% filter(species == 'cactus')
+
+
+paloverde_crownarea_nograzing =  low_elev_woody_nograzing %>%  filter(species == 'paloverde')
+paloverde_crownarea_grazing = low_elev_woody_grazing %>% filter(species == 'paloverde')
+
+lotebush_crownarea_nograzing =  low_elev_woody_nograzing %>%  filter(species == 'lotebush')
+lotebush_crownarea_grazing = low_elev_woody_grazing %>% filter(species == 'lotebush')
+
+t.test(low_elev_woody_nograzing$crownArea_mean, low_elev_woody_grazing$crownArea_mean,alternative = "greater", var.equal = TRUE)
+t.test(mesquite_crownarea_nograzing$crownArea_mean, mesquite_crownarea_grazing$crownArea_mean,alternative = "greater", var.equal = TRUE)
+t.test(creosote_crownarea_nograzing$crownArea_mean, creosote_crownarea_grazing$crownArea_mean,alternative = "less", var.equal = TRUE)
+t.test(cactus_crownarea_nograzing$crownArea_mean, cactus_crownarea_grazing$crownArea_mean, alternative = "less", var.equal = TRUE)
+t.test(paloverde_crownarea_nograzing$crownArea_mean, paloverde_crownarea_grazing$crownArea_mean, alternative = "greater", var.equal = TRUE)
+t.test(lotebush_crownarea_nograzing$crownArea_mean, lotebush_crownarea_grazing$crownArea_mean, alternative = "greater", var.equal = TRUE)
+wilcox.test(low_elev_woody_nograzing$crownArea_mean, low_elev_woody_grazing$crownArea_mean)
+
+
+midlow_elev_woody_nograzing <- srer_crownarea_nograzing %>% filter(FID_elevat == 1)
+midlow_elev_woody_grazing <- srer_crownarea_grazing %>% filter(FID_elevat == 1)
+
+mesquite_crownarea_nograzing =  midlow_elev_woody_nograzing %>%  filter(species == 'mesquite')
+mesquite_crownarea_grazing = midlow_elev_woody_grazing %>% filter(species == 'mesquite')
+
+creosote_crownarea_nograzing =  midlow_elev_woody_nograzing %>%  filter(species == 'creosote')
+creosote_crownarea_grazing = midlow_elev_woody_grazing %>% filter(species == 'creosote')
+
+
+cactus_crownarea_nograzing =  midlow_elev_woody_nograzing %>%  filter(species == 'cactus')
+cactus_crownarea_grazing = midlow_elev_woody_grazing %>% filter(species == 'cactus')
+
+
+paloverde_crownarea_nograzing =  midlow_elev_woody_nograzing %>%  filter(species == 'paloverde')
+paloverde_crownarea_grazing = midlow_elev_woody_grazing %>% filter(species == 'paloverde')
+
+lotebush_crownarea_nograzing =  midlow_elev_woody_nograzing %>%  filter(species == 'lotebush')
+lotebush_crownarea_grazing = midlow_elev_woody_grazing %>% filter(species == 'lotebush')
+
+
+
+t.test(midlow_elev_woody_nograzing$crownArea_mean, midlow_elev_woody_grazing$crownArea_mean,alternative = "less", var.equal = TRUE)
+t.test(mesquite_crownarea_nograzing$crownArea_mean, mesquite_crownarea_grazing$crownArea_mean,alternative = "greater", var.equal = TRUE)
+t.test(creosote_crownarea_nograzing$crownArea_mean, creosote_crownarea_grazing$crownArea_mean,alternative = "less", var.equal = TRUE)
+t.test(cactus_crownarea_nograzing$crownArea_mean, cactus_crownarea_grazing$crownArea_mean, alternative = "less", var.equal = TRUE)
+t.test(paloverde_crownarea_nograzing$crownArea_mean, paloverde_crownarea_grazing$crownArea_mean, alternative = "less", var.equal = TRUE)
+
+t.test(lotebush_crownarea_nograzing$crownArea_mean, lotebush_crownarea_grazing$crownArea_mean, alternative = "less", var.equal = TRUE)
+
+
+
+
+midhigh_elev_wood_nograzing <- srer_crownarea_nograzing %>% filter(FID_elevat == 2)
+midhigh_elev_wood_grazing <- srer_crownarea_grazing %>% filter(FID_elevat == 2)
+
+mesquite_crownarea_nograzing =  midhigh_elev_wood_nograzing %>%  filter(species == 'mesquite')
+mesquite_crownarea_grazing = midhigh_elev_wood_grazing %>% filter(species == 'mesquite')
+
+creosote_crownarea_nograzing =  midhigh_elev_wood_nograzing %>%  filter(species == 'creosote')
+creosote_crownarea_grazing = midhigh_elev_wood_grazing %>% filter(species == 'creosote')
+
+
+cactus_crownarea_nograzing =  midhigh_elev_wood_nograzing %>%  filter(species == 'cactus')
+cactus_crownarea_grazing = midhigh_elev_wood_grazing %>% filter(species == 'cactus')
+
+
+paloverde_crownarea_nograzing =  midhigh_elev_wood_nograzing %>%  filter(species == 'paloverde')
+paloverde_crownarea_grazing = midhigh_elev_wood_grazing %>% filter(species == 'paloverde')
+
+lotebush_crownarea_nograzing =  midhigh_elev_wood_nograzing %>%  filter(species == 'lotebush')
+lotebush_crownarea_grazing = midhigh_elev_wood_grazing %>% filter(species == 'lotebush')
+
+
+t.test(midhigh_elev_wood_nograzing$crownArea_mean, midhigh_elev_wood_grazing$crownArea_mean,alternative = "greater", var.equal = TRUE)
+t.test(mesquite_crownarea_nograzing$crownArea_mean, mesquite_crownarea_grazing$crownArea_mean,alternative = "greater", var.equal = TRUE)
+t.test(creosote_crownarea_nograzing$crownArea_mean, creosote_crownarea_grazing$crownArea_mean,alternative = "greater", var.equal = TRUE)
+t.test(cactus_crownarea_nograzing$crownArea_mean, cactus_crownarea_grazing$crownArea_mean, alternative = "less", var.equal = TRUE)
+t.test(paloverde_crownarea_nograzing$crownArea_mean, paloverde_crownarea_grazing$crownArea_mean, alternative = "greater", var.equal = TRUE)
+t.test(lotebush_crownarea_nograzing$crownArea_mean, lotebush_crownarea_grazing$crownArea_mean, alternative = "greater", var.equal = TRUE)
+
+
+
+high_elev_woody_nograzing <- srer_crownarea_nograzing %>% filter(FID_elevat == 3)
+high_elev_woody_grazing <- srer_crownarea_grazing %>% filter(FID_elevat == 3)
+
+mesquite_crownarea_nograzing =  high_elev_woody_nograzing %>%  filter(species == 'mesquite')
+mesquite_crownarea_grazing = high_elev_woody_grazing %>% filter(species == 'mesquite')
+
+creosote_crownarea_nograzing =  high_elev_woody_nograzing %>%  filter(species == 'creosote')
+creosote_crownarea_grazing = high_elev_woody_grazing %>% filter(species == 'creosote')
+
+
+cactus_crownarea_nograzing =  high_elev_woody_nograzing %>%  filter(species == 'cactus')
+cactus_crownarea_grazing = high_elev_woody_grazing %>% filter(species == 'cactus')
+
+
+paloverde_crownarea_nograzing =  high_elev_woody_nograzing %>%  filter(species == 'paloverde')
+paloverde_crownarea_grazing = high_elev_woody_grazing %>% filter(species == 'paloverde')
+
+lotebush_crownarea_nograzing =  high_elev_woody_nograzing %>%  filter(species == 'lotebush')
+lotebush_crownarea_grazing = high_elev_woody_grazing %>% filter(species == 'lotebush')
+
+
+
+
+t.test(high_elev_woody_nograzing$crownArea_mean, high_elev_woody_grazing$crownArea_mean,alternative = "greater", var.equal = TRUE)
+t.test(mesquite_crownarea_nograzing$crownArea_mean, mesquite_crownarea_grazing$crownArea_mean,alternative = "greater", var.equal = TRUE)
+t.test(creosote_crownarea_nograzing$crownArea_mean, creosote_crownarea_grazing$crownArea_mean,alternative = "less", var.equal = TRUE)
+t.test(cactus_crownarea_nograzing$crownArea_mean, cactus_crownarea_grazing$crownArea_mean, alternative = "less", var.equal = TRUE)
+t.test(paloverde_crownarea_nograzing$crownArea_mean, paloverde_crownarea_grazing$crownArea_mean, alternative = "greater", var.equal = TRUE)
+t.test(lotebush_crownarea_nograzing$crownArea_mean, lotebush_crownarea_grazing$crownArea_mean, alternative = "less", var.equal = TRUE)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#####WGEW####
+#####COVER FREQUENCIES######
+##WGEW###
+wgew_cover <- read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/wgew_species_freq_082223_cleaned.csv')
+wgew_mesquite <- wgew_cover %>% select(-c(cactus,creosote,whitethorn,bareground,grass)) %>% rename(cover = mesquite) %>% mutate(species="mesquite")
+wgew_cactus <- wgew_cover %>% select(-c(mesquite,creosote,whitethorn,bareground,grass))%>% rename(cover= cactus) %>% mutate(species="cactus")
+wgew_creosote <- wgew_cover %>% select(-c(cactus,mesquite,whitethorn,bareground,grass))%>% rename(cover= creosote) %>% mutate(species="creosote")
+wgew_whitethorn <- wgew_cover %>% select(-c(cactus,mesquite,creosote,bareground,grass))%>% rename(cover= whitethorn) %>% mutate(species="whitethorn")
+wgew_bareground <- wgew_cover %>% select(-c(cactus,mesquite,creosote,whitethorn,grass))%>% rename(cover= bareground) %>% mutate(species="bareground")
+wgew_grass <- wgew_cover %>% select(-c(cactus,mesquite,whitethorn,creosote,bareground))%>% rename(cover= grass) %>% mutate(species="grass")
+
+wgew_cover_rbind <- rbind(wgew_mesquite,wgew_cactus) %>% 
+  rbind(wgew_creosote) %>% rbind(wgew_whitethorn) %>% rbind(wgew_bareground) %>% rbind(wgew_grass)
+wgew_cover_nospike <- wgew_cover_rbind %>% filter(spike == 0)
+wgew_cover_spike <- wgew_cover_rbind %>% filter(spike == 1)
+
+
+
+#DENSITY#
+###WGEW##
+wgew_density <-  read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/densities_final_wgew_082223_cleaned.csv')
+wgew_density_nospike <- wgew_density %>% filter(spike == 0)
+wgew_density_spike <- wgew_density %>% filter(spike == 1)
+
+
+##CROWNAREA###
+wgew_crownarea <- read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/WGEW_crownarea_052923.csv')
+wgew_crownarea_nospike <- wgew_crownarea %>% filter(spike == 0)
+wgew_crownarea_spike <- wgew_crownarea %>% filter(spike == 1)
+
+
+
+
+
+###############SUMMARIZING elevation, species and soils
+##Elevation, species and soils##
+wgew_woody_spike_soil_cover_p <- wgew_cover_rbind%>%
+  group_by(MUSYM, species) %>%
+  summarise(spike_avg = t.test(cover[spike==0], cover[spike==1])$p.value)
+#summarise(n = n())
+
+wgew_woody_spike_soil_cover_mean <- wgew_cover_rbind%>%
+  group_by(MUSYM, species, spike) %>%
+  summarise_at(vars(cover), list(cover = mean))
+#summarise(n = n())
+
+
+write.csv(wgew_woody_spike_soil_cover_mean,"wgew_woody_spike_soil_cover_mean_082223.csv")
+write.csv(wgew_woody_spike_soil_cover_p,"wgew_woody_spike_soil_cover_p_082223.csv")
+
+
+
+##Elevation, species and soils##
+wgew_woody_spike_soil_density_p <- wgew_density  %>%
+  group_by(MUSYM,species) %>%
+  summarise(spike_avg = t.test(density[spike==0], density[spike==1])$p.value)
+
+wgew_woody_spike_soil_density_mean <- wgew_density%>%
+  group_by(MUSYM, species, spike) %>%
+  summarise_at(vars(density), list(density = mean))
+#summarise(n = n())
+
+
+write.csv(wgew_woody_spike_soil_density_p,"wgew_woody_spike_soil_density_p_082223.csv")
+write.csv(wgew_woody_spike_soil_density_mean,"wgew_woody_spike_soil_density_mean_082223.csv")
+
+wgew_crownarea <- read.csv('//gaea/projects/RaBET/RaBET_landuse/landuse/wgew_woody_spike_soil_crownarea_mean.csv')
+##Elevation, species and soils##
+wgew_woody_spike_soil_crownarea_p <- wgew_crownarea  %>%
+  group_by(layer,MUSYM,species) %>%
+  summarise(spike_avg = t.test(crownArea_mean[spike==0], crownArea_mean[spike==1])$p.value)
+wgew_woody_spike_soil_crownarea_p <- wgew_crownarea %>%
+  group_by(layer, MUSYM, species) %>%
+  summarise(spike_avg = ifelse(sum(spike == 0) >= 2 && sum(spike == 1) >= 2, 
+                               t.test(crownArea_mean[spike == 0], crownArea_mean[spike == 1])$p.value,
+                               NA))
+wgew_woody_spike_soil_crownarea_mean <- wgew_crownarea%>%
+  group_by(MUSYM, species, layer, spike) %>%
+  summarise_at(vars(crownArea_mean), list(crownarea = mean))
+#summarise(n = n())
+
+
+
+write.csv(wgew_woody_spike_soil_crownarea_mean,"wgew_woody_spike_soil_crownarea_mean.csv")
+
+
+
+
+###SUMMARY, soil, species and 
+##PLOTS##
+##percent cover#
+# Create the base ggplot bar plot with facet_wrap
+base_plot_cover_layer1 <- ggplot(data = cover_layer1, aes(x = species)) +
+  geom_bar(aes(y = cover), position = "dodge", stat = "identity") +
+  facet_wrap(~ grazing + MUSYM) +
+  theme_minimal()
+
+# Calculate the position for labels
+label_positions_cover_layer1 <- cover_layer1 %>%
+  group_by(grazing, MUSYM, species,cover) %>%
+  summarize(label_position = max(cover) + 1)
+
+# Create the final plot with labels
+plot_with_labels_cover_layer1 <- base_plot_cover_layer1 +
+  geom_text(
+    data = label_positions_cover_layer1,
+    aes(y = label_position, label = cover),
+    position = position_dodge(width = 0.9),  # Adjust width as needed
+    vjust = -0.5,  # Adjust vjust for label position
+    size = 3
+  )+ ggtitle("layer 1 cover")
+windows()
+print(plot_with_labels_cover_layer1)
+
+
+
+############WGEW t.test#######
+mesquite_cover_nospike =  wgew_cover_nospike %>%  filter(species == 'mesquite')
+mesquite_cover_spike = wgew_cover_spike %>% filter(species == 'mesquite')
+
+cactus_cover_nospike =  wgew_cover_nospike %>%  filter(species == 'cactus')
+cactus_cover_spike = wgew_cover_spike %>% filter(species == 'cactus')
+
+creosote_cover_nospike =  wgew_cover_nospike %>%  filter(species == 'creosote')
+creosote_cover_spike = wgew_cover_spike %>% filter(species == 'creosote')
+
+
+whitethorn_cover_nospike =  wgew_cover_nospike %>%  filter(species == 'whitethorn')
+whitethorn_cover_spike = wgew_cover_spike %>% filter(species == 'whitethorn')
+
+
+bareground_cover_nospike =  wgew_cover_nospike %>%  filter(species == 'bareground')
+bareground_cover_spike = wgew_cover_spike %>% filter(species == 'bareground')
+
+
+grass_cover_nospike =  wgew_cover_nospike %>%  filter(species == 'grass')
+grass_cover_spike = wgew_cover_spike %>% filter(species == 'grass')
+
+t.test(wgew_cover_nospike$cover, wgew_cover_spike$cover,alternative = "less", var.equal = TRUE)
+t.test(mesquite_cover_nospike$cover, mesquite_cover_spike$cover,alternative = "less", var.equal = TRUE)
+t.test(cactus_cover_nospike$cover, cactus_cover_spike$cover, alternative = "less", var.equal = TRUE)
+t.test(creosote_cover_nospike$cover, creosote_cover_spike$cover,alternative = "less", var.equal = TRUE)
+t.test(whitethorn_cover_nospike$cover, whitethorn_cover_spike$cover,alternative = "less", var.equal = TRUE)
+
+t.test(grass_cover_nospike$cover, grass_cover_spike$cover,alternative = "greater", var.equal = TRUE)
+t.test(bareground_cover_nospike$cover, bareground_cover_spike$cover,alternative = "less", var.equal = TRUE)
+
+
+
+
+
+
+#DENSITY#
+###WGEW##
+mesquite_density_nospike =  wgew_density_nospike %>%  filter(species == 'mesquite')
+mesquite_density_spike = wgew_density_spike %>% filter(species == 'mesquite')
+
+creosote_density_nospike =  wgew_density_nospike %>%  filter(species == 'creosote')
+creosote_density_spike = wgew_density_spike %>% filter(species == 'creosote')
+
+cactus_density_nospike =  wgew_density_nospike %>%  filter(species == 'cactus')
+cactus_density_spike = wgew_density_spike %>% filter(species == 'cactus')
+
+whitethorn_density_nospike =  wgew_density_nospike %>%  filter(species == 'whitethorn')
+whitethorn_density_spike = wgew_density_spike %>% filter(species == 'whitethorn')
+
+t.test(wgew_density_nospike$density, wgew_density_spike$density)
+t.test(mesquite_density_nospike$density, mesquite_density_spike$density,alternative = "less", var.equal = TRUE)
+t.test(creosote_density_nospike$density, creosote_density_spike$density,alternative = "less", var.equal = TRUE)
+t.test(cactus_density_nospike$density, cactus_density_spike$density, alternative = "less", var.equal = TRUE)
+t.test(whitethorn_density_nospike$density, whitethorn_density_spike$density, alternative = "less", var.equal = TRUE)
+
+
+wilcox.test(wgew_density_nospike$density, wgew_density_spike$density, alternative = "two.sided")
+wilcox.test(mesquite_density_nospike$density, mesquite_density_spike$density, alternative = "two.sided")
+wilcox.test(creosote_density_nospike$density, creosote_density_spike$densityy, alternative = "two.sided")
+wilcox.test(cactus_density_nospike$density, cactus_density_spike$density, alternative = "two.sided")
+
+
+
+
+
+
+library(dplyr)
+group_by(low_elev_srer_crownarea, spike) %>%
+  summarise(
+    count = n(),
+    median = median(crownArea_mean, na.rm = TRUE),
+    IQR = IQR(crownArea_mean, na.rm = TRUE)
+  )
+
+
+
+
+####CROWNAREA####
+mesquite_crownarea_nospike =  wgew_crownarea_nospike %>%  filter(species == 'mesquite')
+mesquite_crownarea_spike = wgew_crownarea_spike %>% filter(species == 'mesquite')
+
+creosote_crownarea_nospike =  wgew_crownarea_nospike %>%  filter(species == 'creosote')
+creosote_crownarea_spike = wgew_crownarea_spike %>% filter(species == 'creosote')
+
+
+cactus_crownarea_nospike =  wgew_crownarea_nospike %>%  filter(species == 'cactus')
+cactus_crownarea_spike = wgew_crownarea_spike %>% filter(species == 'cactus')
+
+whitethorn_crownarea_nospike =  wgew_crownarea_nospike %>%  filter(species == 'whitethorn')
+whitethorn_crownarea_spike = wgew_crownarea_spike %>% filter(species == 'whitethorn')
+
+t.test(wgew_crownarea_nospike$crownArea_mean, wgew_crownarea_spike$crownArea_mean,alternative = "greater", var.equal = TRUE, mu=0)
+t.test(mesquite_crownarea_nospike$crownArea_mean, mesquite_crownarea_spike$crownArea_mean,alternative = "greater", var.equal = TRUE)
+t.test(creosote_crownarea_nospike$crownArea_mean, creosote_crownarea_spike$crownArea_mean,alternative = "less", var.equal = TRUE)
+t.test(cactus_crownarea_nospike$crownArea_mean, cactus_crownarea_spike$crownArea_mean, alternative = "less", var.equal = TRUE)
+t.test(whitethorn_crownarea_nospike$crownArea_mean, whitethorn_crownarea_spike$crownArea_mean, alternative = "less", var.equal = TRUE)
+wilcox.test(wgew_crownarea_spike$crownArea_mean,wgew_crownarea_nospike$crownArea_mean, alternative = "two.sided", mu=0)
+wilcox.test(mesquite_crownarea_nospike$crownArea_mean, mesquite_crownarea_spike$crownArea_mean, alternative = "two.sided")
+
+
+
+
+
+
+
+
+
+
